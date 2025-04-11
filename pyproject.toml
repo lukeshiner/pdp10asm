@@ -1,0 +1,27 @@
+[project]
+name = "pdp10asm"
+version = "0.1.0"
+description = "DEC PDP-10 Assembler"
+authors = [
+    {name = "Luke Shiner",email = "luke@lukeshiner.com"}
+]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+]
+
+[tool.poetry]
+
+[tool.poetry.group.dev.dependencies]
+black = "^25.1.0"
+flake8 = "^7.2.0"
+isort = "^6.0.1"
+flake8-bugbear = "^24.12.12"
+flake8-docstrings = "^1.7.0"
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+pytest-integration = "^0.2.3"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
