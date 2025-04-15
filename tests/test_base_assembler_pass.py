@@ -230,6 +230,22 @@ def test_subtraction_operation(base_pass):
     assert base_pass.subtraction_operation(50, 15) == 35
 
 
+def test_multiply_operation(base_pass):
+    assert base_pass.multiply_operation(50, 10) == 500
+
+
+def test_divide_operation(base_pass):
+    assert base_pass.divide_operation(7, 3) == 2
+
+
+def test_and_operation(base_pass):
+    assert base_pass.and_operation(5, 6) == 4
+
+
+def test_or_operation(base_pass):
+    assert base_pass.or_operation(5, 2) == 7
+
+
 def test_calling_operation_by_name(base_pass):
     assert base_pass.operations[Constants.ADDITION_OPERATOR](10, 20) == 30
 
@@ -251,6 +267,10 @@ def test_calling_operation_by_name(base_pass):
         ("FOO-37", 68719476730),
         ("-5+1", 68719476732),
         ("-5+-1", 68719476730),
+        ("5&6", 4),
+        ("5|2", 7),
+        ("7/3", 2),
+        ("4*2", 8),
     ),
 )
 def test_parse_expression(text, expected, base_pass):

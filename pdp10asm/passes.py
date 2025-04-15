@@ -25,6 +25,10 @@ class BaseAssemblerPass:
         self.current_line_comment = ""
         self.done = False
         self.operations = {
+            Constants.AND_OPERATOR: self.and_operation,
+            Constants.OR_OPERATOR: self.or_operation,
+            Constants.MULTIPLY_OPERATOR: self.multiply_operation,
+            Constants.INTEGER_DIVIDE_OPERATOR: self.divide_operation,
             Constants.ADDITION_OPERATOR: self.addition_operation,
             Constants.SUBTRACTION_OPERATOR: self.subtraction_operation,
         }
@@ -113,6 +117,26 @@ class BaseAssemblerPass:
     def subtraction_operation(first_operand, second_operand):
         """Return the result of a subtraction operation."""
         return first_operand - second_operand
+
+    @staticmethod
+    def multiply_operation(first_operand, second_operand):
+        """Return the result of a multiply operation."""
+        return first_operand * second_operand
+
+    @staticmethod
+    def divide_operation(first_operand, second_operand):
+        """Return the result of an integer divide operation."""
+        return first_operand // second_operand
+
+    @staticmethod
+    def and_operation(first_operand, second_operand):
+        """Return the result of a logical AND operation."""
+        return first_operand & second_operand
+
+    @staticmethod
+    def or_operation(first_operand, second_operand):
+        """Return the result of a logical OR operation."""
+        return first_operand | second_operand
 
 
 class FirstPassAssembler(BaseAssemblerPass):
