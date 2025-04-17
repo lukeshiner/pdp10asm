@@ -2,7 +2,7 @@
 
 from .constants import Constants
 from .exceptions import AssemblyError
-from .source_line import SourceLine
+from .expressions import ExpressionParser
 
 
 class BaseAssemblerPass:
@@ -24,14 +24,6 @@ class BaseAssemblerPass:
         self.current_line = ""
         self.current_line_comment = ""
         self.done = False
-        self.operations = {
-            Constants.AND_OPERATOR: self.and_operation,
-            Constants.OR_OPERATOR: self.or_operation,
-            Constants.MULTIPLY_OPERATOR: self.multiply_operation,
-            Constants.INTEGER_DIVIDE_OPERATOR: self.divide_operation,
-            Constants.ADDITION_OPERATOR: self.addition_operation,
-            Constants.SUBTRACTION_OPERATOR: self.subtraction_operation,
-        }
 
     def run(self):
         """Run the assembly pass."""
@@ -46,7 +38,7 @@ class BaseAssemblerPass:
 
     def handle_pseudo_operator(self, source_line):
         """Execute an assembler instruction."""
-        values = [self.parse_number(value) for value in source_line.arguments.split()]
+        values = [self.literal_value(value) for value in source_line.arguments.split()]
         self.pseudo_operators.process_instruction(
             instruction_word=source_line.operator, values=values
         )
@@ -59,84 +51,18 @@ class BaseAssemblerPass:
         """Return the value of a symbol from the symbol table."""
         return self.symbol_table.get_symbol_value(symbol)
 
-    def symbol_or_value(self, word):
-        """If word is a vaild symbol return it's value otherwise return a parsed number."""
-        if word == Constants.PROGRAM_COUNTER_OPERAND:
-            return self.program_counter
-        if SourceLine.is_symbol(word):
-            return self.symbol_value(word)
-        return self.parse_number(word)
-
-    def parse_number(self, text, radix=8):
-        """Return a parsed numeric value."""
-        return int(text, radix)
-
-    @staticmethod
-    def int_to_twos_complement(value):
-        """Return a value as its two's complement equivalent."""
-        if value >= 0:
-            return value
-        return 0o777777777777 & value
-
-    def parse_expression(self, text):
-        """Return the value of an expression as a positive int."""
-        value = self.int_to_twos_complement(self._parse_expression(text))
-        self.validate_value(value)
-        return value
-
-    def _parse_expression(self, text):
-        """Return the value of an expression as an int."""
-        negative = text[0] == Constants.SUBTRACTION_OPERATOR
-        if negative is True:
-            text = text[1:]
-        for operator in Constants.OPERATORS:
-            if operator in text:
-                first_operand, second_operand = text.split(operator, maxsplit=1)
-                method = self.operations[operator]
-                if negative is True:
-                    first_operand = f"-{first_operand}"
-                return method(
-                    self._parse_expression(first_operand),
-                    self._parse_expression(second_operand),
-                )
-        if negative is True:
-            text = f"-{text}"
-        return self.symbol_or_value(text)
-
     def validate_value(self, value):
         """Raise AssemblyError if value is not a valid 36-bit integer."""
         if value < 0 or value > 0o777777777777:
             raise AssemblyError(f"{value} is not a 36-bit number.")
 
-    @staticmethod
-    def addition_operation(first_operand, second_operand):
-        """Return the result of an addition operation."""
-        return first_operand + second_operand
+    def literal_value(self, text):
+        """Parse text and return as a literal value."""
+        return ExpressionParser(text, self.assembler).as_literal()
 
-    @staticmethod
-    def subtraction_operation(first_operand, second_operand):
-        """Return the result of a subtraction operation."""
-        return first_operand - second_operand
-
-    @staticmethod
-    def multiply_operation(first_operand, second_operand):
-        """Return the result of a multiply operation."""
-        return first_operand * second_operand
-
-    @staticmethod
-    def divide_operation(first_operand, second_operand):
-        """Return the result of an integer divide operation."""
-        return first_operand // second_operand
-
-    @staticmethod
-    def and_operation(first_operand, second_operand):
-        """Return the result of a logical AND operation."""
-        return first_operand & second_operand
-
-    @staticmethod
-    def or_operation(first_operand, second_operand):
-        """Return the result of a logical OR operation."""
-        return first_operand | second_operand
+    def twos_complement_value(self, text):
+        """Parse text and return as a two's complement value."""
+        return ExpressionParser(text, self.assembler).as_twos_complement()
 
 
 class FirstPassAssembler(BaseAssemblerPass):
@@ -160,7 +86,7 @@ class FirstPassAssembler(BaseAssemblerPass):
         """Add symbols for an assignment."""
         if not source_line.is_assignment:
             return
-        value = self.parse_expression(source_line.assignment_value)
+        value = self.twos_complement_value(source_line.assignment_value)
         self.symbol_table.add_user_symbol(
             symbol=source_line.assignment_symbol,
             value=value,
@@ -193,7 +119,7 @@ class SecondPassAssembler(BaseAssemblerPass):
     def assemble_line(self, source_line):
         """Return the binary word represented by line."""
         if source_line.is_value is True:
-            return self.parse_expression(source_line.value)
+            return self.twos_complement_value(source_line.value)
         operator_binary = self.symbol_value(source_line.operator)
         if source_line.is_primary_instruction is True:
             operand = self.primary_operand_value(source_line)
@@ -227,7 +153,7 @@ class SecondPassAssembler(BaseAssemblerPass):
         """Return the accumulator address part of an opreand word.."""
         if accumulator is None:
             return 0
-        accumulator_value = self.parse_expression(accumulator)
+        accumulator_value = self.literal_value(accumulator)
         self.validate_accumulator_value(accumulator_value)
         return accumulator_value << 23
 
@@ -238,7 +164,7 @@ class SecondPassAssembler(BaseAssemblerPass):
 
     def address_value(self, memory_address):
         """Return the address part of an operand word."""
-        memory_address_value = self.parse_expression(memory_address)
+        memory_address_value = self.literal_value(memory_address)
         self.validate_address(memory_address_value)
         return memory_address_value
 
@@ -251,7 +177,7 @@ class SecondPassAssembler(BaseAssemblerPass):
         """Return the index regsiter part of an operand word."""
         if index_register is None:
             return 0
-        index_register_value = self.parse_expression(index_register)
+        index_register_value = self.literal_value(index_register)
         self.validate_index_register_value(index_register_value)
         return index_register_value << 18
 
@@ -264,7 +190,7 @@ class SecondPassAssembler(BaseAssemblerPass):
         """Return the device ID part of an IO opreand word."""
         if device_id is None:
             return 0
-        device_id_value = self.parse_expression(device_id)
+        device_id_value = self.literal_value(device_id)
         self.validate_device_id(device_id_value)
         return device_id_value << 24
 

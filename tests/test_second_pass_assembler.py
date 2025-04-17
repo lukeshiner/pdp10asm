@@ -1,4 +1,3 @@
-import types
 from unittest import mock
 
 import pytest
@@ -54,12 +53,6 @@ def test_second_pass_assembler_pass_has_source_line_number(second_pass):
 
 def test_second_pass_assembler_pass_has_done_property(second_pass):
     assert second_pass.done is False
-
-
-def test_second_pass_assembler_pass_has_operations_property(second_pass):
-    for key, value in second_pass.operations.items():
-        assert isinstance(key, str)
-        assert isinstance(value, types.FunctionType)
 
 
 @pytest.fixture
@@ -147,9 +140,15 @@ def mock_symbol_table(second_pass):
 
 
 @pytest.fixture
-def mock_parse_expression(second_pass):
-    second_pass.parse_expression = mock.Mock(return_value=234)
-    return second_pass.parse_expression
+def mock_literal_value(second_pass):
+    second_pass.literal_value = mock.Mock(return_value=234)
+    return second_pass.literal_value
+
+
+@pytest.fixture
+def mock_twos_complement_value(second_pass):
+    second_pass.twos_complement_value = mock.Mock(return_value=234)
+    return second_pass.twos_complement_value
 
 
 @pytest.fixture
@@ -172,7 +171,7 @@ def mock_io_operand_value(second_pass):
 
 def test_assemble_line_returns_parsed_expression_when_passed_value(
     mock_symbol_table,
-    mock_parse_expression,
+    mock_twos_complement_value,
     mock_symbol_value,
     mock_primary_operand_value,
     mock_io_operand_value,
@@ -181,13 +180,12 @@ def test_assemble_line_returns_parsed_expression_when_passed_value(
 ):
     source_line.is_value = True
     return_value = second_pass.assemble_line(source_line)
-    mock_parse_expression.assert_called_once_with(source_line.value)
-    assert return_value == mock_parse_expression.return_value
+    mock_twos_complement_value.assert_called_once_with(source_line.value)
+    assert return_value == mock_twos_complement_value.return_value
 
 
 def test_assemble_line_with_primary_instruction(
     mock_symbol_table,
-    mock_parse_expression,
     mock_symbol_value,
     mock_primary_operand_value,
     mock_io_operand_value,
@@ -205,7 +203,6 @@ def test_assemble_line_with_primary_instruction(
 
 def test_assemble_line_with_io_instruction(
     mock_symbol_table,
-    mock_parse_expression,
     mock_symbol_value,
     mock_primary_operand_value,
     mock_io_operand_value,
@@ -223,7 +220,6 @@ def test_assemble_line_with_io_instruction(
 
 def test_assemble_line_with_invalid_instruction(
     mock_symbol_table,
-    mock_parse_expression,
     mock_symbol_value,
     mock_primary_operand_value,
     mock_io_operand_value,
@@ -257,13 +253,13 @@ def test_assemble_line_with_invalid_instruction(
         (15, 0o000740000000),
     ),
 )
-def test_accumulator_value(value, expected, second_pass):
+def test_accumulator_value(mock_literal_value, value, expected, second_pass):
     second_pass.validate_accumulator_value = mock.Mock()
-    second_pass.symbol_or_value = mock.Mock(return_value=value)
+    mock_literal_value.return_value = value
     assert second_pass.accumulator_value("AC") == expected
-    second_pass.symbol_or_value.assert_called_once_with("AC")
+    mock_literal_value.assert_called_once_with("AC")
     second_pass.validate_accumulator_value.assert_called_once_with(
-        second_pass.symbol_or_value.return_value
+        mock_literal_value.return_value
     )
 
 
@@ -289,13 +285,13 @@ def test_validate_accumulator_value_with_valid_value(second_pass):
     second_pass.validate_accumulator_value(15)
 
 
-def test_address_value(second_pass):
+def test_address_value(mock_literal_value, second_pass):
     second_pass.validate_address = mock.Mock()
-    second_pass.symbol_or_value = mock.Mock(return_value=127)
-    assert second_pass.address_value("AC") == second_pass.symbol_or_value.return_value
-    second_pass.symbol_or_value.assert_called_once_with("AC")
+    mock_literal_value.return_value = 127
+    assert second_pass.address_value("AC") == mock_literal_value.return_value
+    mock_literal_value.assert_called_once_with("AC")
     second_pass.validate_address.assert_called_once_with(
-        second_pass.symbol_or_value.return_value
+        mock_literal_value.return_value
     )
 
 
@@ -385,13 +381,13 @@ def test_io_operand_value(
         (15, 0o000017000000),
     ),
 )
-def test_index_register_value(value, expected, second_pass):
+def test_index_register_value(mock_literal_value, value, expected, second_pass):
     second_pass.validate_index_register_value = mock.Mock()
-    second_pass.symbol_or_value = mock.Mock(return_value=value)
+    mock_literal_value.return_value = value
     assert second_pass.index_register_value("AC") == expected
-    second_pass.symbol_or_value.assert_called_once_with("AC")
+    mock_literal_value.assert_called_once_with("AC")
     second_pass.validate_index_register_value.assert_called_once_with(
-        second_pass.symbol_or_value.return_value
+        mock_literal_value.return_value
     )
 
 
@@ -403,13 +399,13 @@ def test_index_register_value_with_none(second_pass):
     second_pass.validate_index_register_value.assert_not_called()
 
 
-def test_device_id_value(second_pass):
+def test_device_id_value(mock_literal_value, second_pass):
     second_pass.validate_device_id = mock.Mock()
-    second_pass.symbol_or_value = mock.Mock(return_value=0o104)
+    mock_literal_value.return_value = 0o104
     assert second_pass.device_id_value("TTY,12") == 0o010400000000
-    second_pass.symbol_or_value.assert_called_once_with("TTY,12")
+    mock_literal_value.assert_called_once_with("TTY,12")
     second_pass.validate_device_id.assert_called_once_with(
-        second_pass.symbol_or_value.return_value
+        mock_literal_value.return_value
     )
 
 

@@ -49,6 +49,18 @@ def mock_handle_pseudo_operator(first_pass_assembler):
     return first_pass_assembler.handle_pseudo_operator
 
 
+@pytest.fixture
+def mock_literal_value(first_pass_assembler):
+    first_pass_assembler.literal_value = mock.Mock()
+    return first_pass_assembler.literal_value
+
+
+@pytest.fixture
+def mock_twos_complement_value(first_pass_assembler):
+    first_pass_assembler.twos_complement_value = mock.Mock(return_value=234)
+    return first_pass_assembler.twos_complement_value
+
+
 def test_processs_line_handles_pseudo_operators(
     mock_handle_labels,
     mock_handle_assignments,
@@ -109,17 +121,16 @@ def test_add_label(mock_assembler, first_pass_assembler):
     )
 
 
-def test_handle_assignment(first_pass_assembler, source_line):
-    first_pass_assembler.parse_expression = mock.Mock()
+def test_handle_assignment(
+    mock_twos_complement_value, first_pass_assembler, source_line
+):
     first_pass_assembler.symbol_table = mock.Mock()
     source_line.is_assignment = True
     first_pass_assembler.handle_assignments(source_line)
-    first_pass_assembler.parse_expression.assert_called_once_with(
-        source_line.assignment_value
-    )
+    mock_twos_complement_value.assert_called_once_with(source_line.assignment_value)
     first_pass_assembler.symbol_table.add_user_symbol.assert_called_once_with(
         symbol=source_line.assignment_symbol,
-        value=first_pass_assembler.parse_expression.return_value,
+        value=mock_twos_complement_value.return_value,
         source_line=source_line.source_line_number,
     )
 
