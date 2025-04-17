@@ -60,6 +60,8 @@ class SourceLine:
                 and character not in Constants.SYMBOL_SPECIAL_CHARACTERS
             ):
                 return False
+            if word == ".":
+                return False
         return True
 
     def _read_comment(self, text):
@@ -81,12 +83,11 @@ class SourceLine:
         return text.strip()
 
     def _read_assignment(self, text):
-        if text and text.split()[0].count(Constants.ASSIGNMENT_OPERATOR) > 0:
+        operator = Constants.ASSIGNMENT_OPERATOR
+        if text and text.split()[0].count(operator) > 0:
             try:
                 self.assignment_symbol, self.assignment_value = [
-                    _.strip()
-                    for _ in text.split(Constants.ASSIGNMENT_OPERATOR)
-                    if _.strip()
+                    _.strip() for _ in text.split(operator) if _.strip()
                 ]
             except ValueError as e:
                 raise AssemblyError(f"Invalid assignment {text!r}.") from e

@@ -611,6 +611,7 @@ def test_parse_io_operand(
         ("%LAB", True),
         ("LAB%", True),
         ("LA%B", True),
+        (".", False),
     ),
 )
 def test_is_symbol(word, expected):

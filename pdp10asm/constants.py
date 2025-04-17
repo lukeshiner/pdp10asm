@@ -25,8 +25,8 @@ class Constants:
     AND_OPERATOR = "&"
     OR_OPERATOR = "|"
     OPERATORS = [
-        MULTIPLY_OPERATOR,
         INTEGER_DIVIDE_OPERATOR,
+        MULTIPLY_OPERATOR,
         AND_OPERATOR,
         OR_OPERATOR,
         ADDITION_OPERATOR,
