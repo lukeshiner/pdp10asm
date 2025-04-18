@@ -12,17 +12,61 @@ def assembler():
     return mock.Mock()
 
 
+@pytest.fixture
+def parser(assembler):
+    return ExpressionParser("text", assembler)
+
+
 @pytest.mark.parametrize(
-    "text,radix,expected",
+    "text,expected",
     (
-        ("10", 8, 8),
-        ("10", 10, 10),
-        ("101", 2, 5),
-        ("FF", 16, 255),
+        ("10", 8),
+        ("^O10", 8),
+        ("^D10", 10),
+        ("^D 10", 10),
+        ("^B101", 5),
+        ("5K", 5000),
+        ("5M", 5000000),
+        ("5 G", 5000000000),
+        ("^O10K", 8000),
+        ("^D10M", 10000000),
+        ("^D 10 G", 10000000000),
+        ("^B101 K", 5000),
     ),
 )
-def test_parse_number(text, radix, expected):
-    assert ExpressionParser.value_to_int(text, radix=radix) == expected
+def test_parse_number(text, expected, parser):
+    assert parser.value_to_int(text) == expected
+
+
+@pytest.mark.parametrize(
+    "text,value,radix",
+    (
+        ("10", "10", 8),
+        ("^O10", "10", 8),
+        ("^D10", "10", 10),
+        ("^D 10", "10", 10),
+        ("^B101", "101", 2),
+    ),
+)
+def test_handle_radix(text, value, radix, parser):
+    assert parser.handle_radix(text) == (value, radix)
+
+
+@pytest.mark.parametrize(
+    "text,value,magnitude",
+    (
+        ("10", "10", 1),
+        ("10K", "10", 1000),
+        ("10M", "10", 1000000),
+        ("10G", "10", 1000000000),
+        ("5", "5", 1),
+        ("5 K", "5", 1000),
+        ("5 M", "5", 1000000),
+        ("5 G", "5", 1000000000),
+    ),
+)
+def test_handle_magnitude(text, value, magnitude, parser):
+    assert parser.handle_magnitude(text) == (value, magnitude)
 
 
 def test_parse_expression_with_no_operators(assembler):

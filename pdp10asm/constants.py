@@ -8,10 +8,20 @@ class Constants:
     LABEL = ":"
     INDIRECT = "@"
     AC_SEPERATOR = ","
-    RADIX_INDICATOR = "^"
-    DECIMAL_INDICATOR = "^D"
-    OCTAL_INDICATOR = "^O"
-    BINARY_INDICATOR = "^B"
+    QUALIFIER_INDICATOR = "^"
+    DECIMAL_QUALIFIER = "^D"
+    OCTAL_QUALIFIER = "^O"
+    BINARY_QUALIFIER = "^B"
+    RADIX_QUALIFIERS = {
+        DECIMAL_QUALIFIER: 10,
+        OCTAL_QUALIFIER: 8,
+        BINARY_QUALIFIER: 2,
+    }
+    MAGNITUDE_SUFFIXES = {
+        "K": 1000,
+        "M": 1000000,
+        "G": 1000000000,
+    }
     BINARY_SHIFT_INDICATOR = "B"
     SYMBOL_SPECIAL_CHARACTERS = ["%", "$", "."]
     OPEN_INDEX_REGISTER = "("

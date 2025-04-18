@@ -82,10 +82,25 @@ class ExpressionParser:
             return self.assembler.symbol_table.get_symbol_value(text)
         return self.value_to_int(text)
 
-    @staticmethod
-    def value_to_int(value, radix=8):
+    def value_to_int(self, value):
         """Return a value as an integer."""
-        return int(value, radix)
+        value, radix = self.handle_radix(value)
+        value, magnitude = self.handle_magnitude(value)
+        return int(value, radix) * magnitude
+
+    def handle_radix(self, value):
+        """Return the value with radix qualifier removed and the radix."""
+        for indicator, radix in Constants.RADIX_QUALIFIERS.items():
+            if indicator in value:
+                return value.replace(indicator, "").strip(), radix
+        return value, 8
+
+    def handle_magnitude(self, value):
+        """Return value with magnitude removed and the magnitude value."""
+        for suffix, magnitude in Constants.MAGNITUDE_SUFFIXES.items():
+            if value.endswith(suffix):
+                return value[: -len(suffix)].strip(), magnitude
+        return value, 1
 
     @staticmethod
     def to_twos_complement(value):
