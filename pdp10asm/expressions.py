@@ -74,13 +74,15 @@ class ExpressionParser:
         self.validate_value(value)
         return value
 
-    def symbol_or_value(self, text):
+    def symbol_or_value(self, token):
         """If word is a vaild symbol return it's value otherwise return a parsed number."""
-        if text == Constants.PROGRAM_COUNTER_OPERAND:
+        if isinstance(token, int):
+            return token
+        if token == Constants.PROGRAM_COUNTER_OPERAND:
             return self.assembler.current_pass.program_counter
-        if SourceLine.is_symbol(text):
-            return self.assembler.symbol_table.get_symbol_value(text)
-        return self.value_to_int(text)
+        if SourceLine.is_symbol(token):
+            return self.assembler.symbol_table.get_symbol_value(token)
+        return self.value_to_int(token)
 
     def value_to_int(self, value):
         """Return a value as an integer."""
@@ -118,20 +120,32 @@ class ExpressionParser:
     @staticmethod
     def expression_lexer(string):
         """Return string as a list of values and operators."""
+        string = string.strip()
         tokens = []
-        token = []
-        for char in string:
-            if len(token) == 0 and char == Constants.SUBTRACTION_OPERATOR:
-                token.append(string[0])
-                continue
-            if char in Constants.OPERATORS:
-                tokens.append("".join(token).strip())
-                tokens.append(char)
-                token = []
+        while string is not None and len(string) > 0:
+            if string[0] == "<":
+                end_bracked_index = string.rfind(">")
+                bracketed = string[1:end_bracked_index].strip()
+                string = string[end_bracked_index + 1 :].strip()
+                tokens.append(ExpressionParser.expression_lexer(bracketed))
             else:
-                token.append(char)
-        tokens.append("".join(token).strip())
+                token, string = ExpressionParser.get_token(string)
+                tokens.append(token)
         return tokens
+
+    @staticmethod
+    def get_token(string):
+        """Return the first token in a string."""
+        token = []
+        split_characters = Constants.OPERATORS + ["<", ">", "."]
+        for char in split_characters:
+            if string[0].startswith(char):
+                return char.strip(), string[len(char) :].strip()
+        for i, char in enumerate(string):
+            token.append(char)
+            if i < len(string) - 1 and string[i + 1] in split_characters:
+                return "".join(token).strip(), string[i + 1 :].strip()
+        return "".join(token).strip(), None
 
     def parse(self, text):
         """Return the parsed value of the expression text."""
@@ -139,12 +153,24 @@ class ExpressionParser:
         return self._parse_expression(expression)
 
     def _parse_expression(self, expression):
+        for i, token in enumerate(expression):
+            if isinstance(token, list):
+                expression[i] = self._parse_expression(token)
         if len(expression) == 1:
             return self.symbol_or_value(expression[0])
         for operator in reversed(Constants.OPERATORS):
             if operator in expression:
-                left = expression[: expression.index(operator)]
-                right = expression[expression.index(operator) + 1 :]
+                operator_index = expression.index(operator)
+                if operator == Constants.SUBTRACTION_OPERATOR:
+                    if (
+                        operator_index == 0
+                        or expression[operator_index - 1] in Constants.OPERATORS
+                    ):
+                        value = expression.pop(operator_index + 1)
+                        expression[operator_index] = 0 - self._parse_expression(value)
+                        return self._parse_expression(expression)
+                left = expression[:operator_index]
+                right = expression[operator_index + 1 :]
                 method = self.operations[operator]
                 return method(
                     self._parse_expression(left),

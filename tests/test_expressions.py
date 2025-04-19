@@ -106,15 +106,36 @@ def test_calling_operation_by_name():
 
 
 @pytest.mark.parametrize(
+    "text,token,string",
+    (
+        ("5", "5", None),
+        ("1+2", "1", "+2"),
+        ("+2-", "+", "2-"),
+        ("FOO 5 + 7", "FOO 5", "+ 7"),
+        ("+ < 3+5>", "+", "< 3+5>"),
+    ),
+)
+def test_get_token(text, token, string):
+    returned_token, returned_string = ExpressionParser.get_token(text)
+    assert returned_token == token
+    assert returned_string == string
+
+
+@pytest.mark.parametrize(
     "string,expected",
     (
         ("5", ["5"]),
-        ("-5", ["-5"]),
+        ("-5", ["-", "5"]),
         ("5+1", ["5", "+", "1"]),
-        ("-5+1", ["-5", "+", "1"]),
+        ("-5+1", ["-", "5", "+", "1"]),
         ("foo 5 + 12", ["foo 5", "+", "12"]),
-        ("-5+-1", ["-5", "+", "-1"]),
-        ("-5--1", ["-5", "-", "-1"]),
+        ("-5+-1", ["-", "5", "+", "-", "1"]),
+        ("-5--1", ["-", "5", "-", "-", "1"]),
+        ("5+<3-2>", (["5", "+", ["3", "-", "2"]])),
+        ("6+<5+<7-5>*4>", ["6", "+", ["5", "+", ["7", "-", "5"], "*", "4"]]),
+        ("5 + <3 * 2>", ["5", "+", ["3", "*", "2"]]),
+        ("<5 + 3> * 2", [["5", "+", "3"], "*", "2"]),
+        ("5 + <3 + <6 + 9>>", ["5", "+", ["3", "+", ["6", "+", "9"]]]),
     ),
 )
 def test_expression_lexer(string, expected):
@@ -165,6 +186,9 @@ def test_as_twos_complement(mock_parse):
         ("7+30/10*4+6", 25),
         (" 7 + 30 / 10 * 4 + 6 ", 25),
         ("5 - 7 ", -2),
+        ("5 + <3 * 2>", 11),
+        ("<5 + 3> * 2", 16),
+        ("5 * <3 * <4+1> -1>", 70),
     ),
 )
 def test_parse(text, expected, assembler):
@@ -209,3 +233,38 @@ def test_validate_value_raises_if_value_too_large():
     with pytest.raises(AssemblyError) as exc_info:
         ExpressionParser.validate_value(0o1000000000000)
     assert str(exc_info.value) == "68719476736 is not a 36-bit number."
+
+
+# @pytest.mark.parametrize(
+#     "text,level,expected",
+#     (
+#         ("some Text <<<X>><<<X>Y>Z>>", 5, []),
+#         ("some Text <<<X>><<<X>Y>Z>>", 4, ["X"]),
+#         ("some Text <<<X>><<<X>Y>Z>>", 3, ["X", "<X>Y"]),
+#         ("some Text <<<X>><<<X>Y>Z>>", 2, ["<X>", "<<X>Y>Z"]),
+#         ("some Text <<<X>><<<X>Y>Z>>", 1, ["<<X>><<<X>Y>Z>"]),
+#         ("some Text <<<X>><<<X>Y>Z>>", 0, ["some Text <<<X>><<<X>Y>Z>>"]),
+#         ("A", 0, ["A"]),
+#         ("<hello <world>>", 0, ["<hello <world>>"]),
+#         ("<hello <world>>", 1, ["world"]),
+#         ("<hello <world>>", 2, ["hello <world>"]),
+#         ("hello <world>", 1, ["world"]),
+#     ),
+# )
+# def test_get_nested_level(text, level, expected):
+#     value = ExpressionParser.get_nested_level(text, level)
+#     assert list(value) == expected
+
+
+# @pytest.mark.parametrize(
+#     "text,expected",
+#     (
+#         ("A", 0),
+#         ("<A>", 1),
+#         ("<hello <world>>", 2),
+#         ("<hell<o<w>or>l>d>", 3),
+#         ("some Text <<<X>><<<X>Y>Z>>", 4),
+#     ),
+# )
+# def test_max_nested_level(text, expected):
+#     assert ExpressionParser.get_max_nexted_level(text) == expected
