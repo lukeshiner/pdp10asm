@@ -68,6 +68,11 @@ def test_read_labels(string, labels, return_value, source_line):
     assert source_line.labels == labels
 
 
+def test_read_labels_sets_instruction_text(source_line):
+    source_line._read_labels("LABEL: MOV 200")
+    assert source_line.instruction_text == "MOV 200"
+
+
 def test_read_assignment_with_assignment(source_line):
     text = "A= B"
     assert source_line._read_assignment(text) == ""

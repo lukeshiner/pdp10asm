@@ -10,21 +10,29 @@ def hello_world_text():
     return text
 
 
-@pytest.fixture
-def hello_world_lines(hello_world_text):
-    return hello_world_text.splitlines()
-
-
-@pytest.fixture
-def memory_to_paper_tape_raw_text():
-    with open(Path(__file__).parent / "asm" / "memory_block_to_paper_tape.asm") as f:
+@pytest.fixture()
+def hello_world_listing_text():
+    with open(Path(__file__).parent / "listings" / "hello_world.txt") as f:
         text = f.read()
     return text
 
 
 @pytest.fixture
-def memory_to_paper_tape_raw_lines(memory_to_paper_tape_raw_text):
-    return memory_to_paper_tape_raw_text.splitlines()
+def memory_to_paper_tape_raw_text():
+    with open(
+        Path(__file__).parent / "asm" / "memory_block_to_paper_tape_raw.asm"
+    ) as f:
+        text = f.read()
+    return text
+
+
+@pytest.fixture
+def memory_to_paper_tape_raw_listing_text():
+    with open(
+        Path(__file__).parent / "listings" / "memory_block_to_paper_tape_raw.txt"
+    ) as f:
+        text = f.read()
+    return text
 
 
 class Instruction:

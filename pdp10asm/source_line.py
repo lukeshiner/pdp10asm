@@ -22,6 +22,7 @@ class SourceLine:
         self.is_assemblable = False
         self.is_empty = True
         self.comment = None
+        self.instruction_text = None
         self.labels = []
         self.operator = None
         self.assignment_symbol = None
@@ -80,6 +81,9 @@ class SourceLine:
             if not self.is_symbol(label):
                 raise AssemblyError(f"Invalid label {label!r}.")
             self.labels.append(label.strip())
+        text = text.strip()
+        if len(text) > 0:
+            self.instruction_text = text
         return text.strip()
 
     def _read_assignment(self, text):

@@ -114,7 +114,11 @@ class SecondPassAssembler(BaseAssemblerPass):
             return
         if source_line.is_assemblable is True:
             instruction_word = self.assemble_line(source_line)
-            self.assembler.program[self.program_counter] = instruction_word
+            self.assembler.program.add_line(
+                source_line=source_line,
+                memory_location=self.program_counter,
+                binary_value=instruction_word,
+            )
 
     def assemble_line(self, source_line):
         """Return the binary word represented by line."""

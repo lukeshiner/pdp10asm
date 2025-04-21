@@ -9,7 +9,7 @@ from pdp10asm.symbol_table import SymbolTable
 
 @pytest.fixture
 def mock_assembler():
-    assembler = mock.Mock(program={}, symbol_table=SymbolTable())
+    assembler = mock.Mock(symbol_table=SymbolTable())
 
     return assembler
 
@@ -67,6 +67,12 @@ def mock_assemble_line(second_pass):
     return second_pass.assemble_line
 
 
+@pytest.fixture
+def mock_program(second_pass):
+    second_pass.assembler.program = mock.Mock()
+    return second_pass.assembler.program
+
+
 def test_process_line_ignores_assignments(
     source_line, mock_handle_pseudo_operator, mock_assemble_line, second_pass
 ):
@@ -87,21 +93,25 @@ def test_process_line_passes_input_to_assemble_line_when_not_pseudo_operator_or_
 
 
 def test_process_line_updates_program_when_not_pseudo_operator_or_assignment_and_assemblable(
-    source_line, mock_assemble_line, second_pass
+    source_line, mock_assemble_line, mock_program, second_pass
 ):
     source_line.is_assemblable = True
     second_pass.program_counter = 4
     second_pass.process_line(source_line)
-    assert second_pass.assembler.program == {4: mock_assemble_line.return_value}
+    mock_program.add_line.assert_called_once_with(
+        source_line=source_line,
+        memory_location=4,
+        binary_value=mock_assemble_line.return_value,
+    )
 
 
 def test_process_line_does_not_update_program_when_not_assemblable(
-    source_line, mock_assemble_line, second_pass
+    source_line, mock_assemble_line, mock_program, second_pass
 ):
     source_line.is_assemblable = False
     second_pass.process_line(source_line)
     mock_assemble_line.assert_not_called()
-    assert second_pass.assembler.program == {}
+    mock_program.add_line.assert_not_called()
 
 
 def test_process_line_does_not_handle_assmbler_instruction_when_not_pseudo_operator(

@@ -1,0 +1,29 @@
+SYMBOLS:
+START:    000000 770200   DEFINED ON: 9         
+STARTADD: 000000 000000   DEFINED ON: 11        
+NBYTES:   000000 000001   DEFINED ON: 12        
+POINT:    000000 000002   DEFINED ON: 13        
+CURADD:   000000 000003   DEFINED ON: 14        
+BLEFT:    000000 000004   DEFINED ON: 15        
+OUT:      000000 000005   DEFINED ON: 16        
+WORDL:    000000 770204   DEFINED ON: 23        
+BYTEL:    000000 770205   DEFINED ON: 24        
+NEWW:     000000 770213   DEFINED ON: 30        
+FIN:      000000 770215   DEFINED ON: 32        
+
+LABELS        INSTRUCTION         ADDRESS   VALUE         
+__________________________________________________________
+              CONO PTP,50         770200    710200 000050 
+              MOVE CURADD,NBYTES  770201    200140 000001 
+              HRLI POINT,440600   770202    505100 440600 
+              HRR POINT,0         770203    540100 000000 
+WORDL:        MOVEI BLEFT,6       770204    201200 000006 
+BYTEL:        ILDB OUT,POINT      770205    134240 000002 
+              DATAO PTP,OUT       770206    710140 000005 
+              CONSO PTP,10        770207    710340 000010 
+              JRST .-1            770210    254000 770207 
+              SOJE BLEFT,NEWW     770211    362200 770213 
+              JRST BYTEL          770212    254000 770205 
+NEWW:         SOJL 3,FIN          770213    361140 770215 
+              JRST WORDL          770214    254000 770204 
+FIN:          HALT START          770215    254200 770200 

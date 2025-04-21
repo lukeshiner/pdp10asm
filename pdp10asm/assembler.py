@@ -4,6 +4,7 @@ import sys
 
 from .exceptions import AssemblyError
 from .passes import FirstPassAssembler, SecondPassAssembler
+from .program import Program
 from .pseudo_operators import PseudoOperators
 from .source_line import SourceLine
 from .symbol_table import SymbolTable
@@ -22,7 +23,7 @@ class PDP10Assembler:
         self.symbol_table = SymbolTable()
         self.pseudo_operators = PseudoOperators(self)
         self.text = text
-        self.program = {}
+        self.program = Program()
         self.source_line_number = 0
         self.first_pass = FirstPassAssembler(assembler=self)
         self.second_pass = SecondPassAssembler(assembler=self)
@@ -43,8 +44,10 @@ class PDP10Assembler:
         """Assemble the source program."""
         self.run_text_parse()
         self.run_first_pass_assembly()
+        self.program.symbols = self.symbol_table.user_symbols()
         self.current_pass = self.second_pass
         self.run_second_pass_assembly()
+        return self.program
 
     def run_text_parse(self):
         """Run first pass assembly."""

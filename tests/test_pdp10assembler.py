@@ -5,6 +5,7 @@ import pytest
 from pdp10asm.assembler import PDP10Assembler
 from pdp10asm.exceptions import AssemblyError
 from pdp10asm.passes import FirstPassAssembler, SecondPassAssembler
+from pdp10asm.program import AssembledLine, Program
 from pdp10asm.symbol_table import SymbolTable, UserSymbol
 
 
@@ -63,7 +64,7 @@ def test_assembler_has_text(pdp10assembler, text):
 
 
 def test_assembler_has_program(pdp10assembler):
-    assert pdp10assembler.program == {}
+    assert isinstance(pdp10assembler.program, Program)
 
 
 def test_has_first_pass_assembler(pdp10assembler):
@@ -74,7 +75,7 @@ def test_has_second_pass_assembler(pdp10assembler):
     assert isinstance(pdp10assembler.second_pass, SecondPassAssembler)
 
 
-def test_assemble_method(
+def test_assemble_method_calls_text_parse(
     mock_run_text_parse,
     mock_run_first_pass_assembly,
     mock_run_second_pass_assembly,
@@ -82,9 +83,59 @@ def test_assemble_method(
 ):
     pdp10assembler.assemble()
     mock_run_text_parse.assert_called_once_with()
+
+
+def test_assemble_method_runs_first_pass(
+    mock_run_text_parse,
+    mock_run_first_pass_assembly,
+    mock_run_second_pass_assembly,
+    pdp10assembler,
+):
+    pdp10assembler.assemble()
     mock_run_first_pass_assembly.assert_called_once_with()
+
+
+def test_assemble_method_runs_second_pass(
+    mock_run_text_parse,
+    mock_run_first_pass_assembly,
+    mock_run_second_pass_assembly,
+    pdp10assembler,
+):
+    pdp10assembler.assemble()
     mock_run_second_pass_assembly.assert_called_once_with()
+
+
+def test_assemble_method_updates_current_pass(
+    mock_run_text_parse,
+    mock_run_first_pass_assembly,
+    mock_run_second_pass_assembly,
+    pdp10assembler,
+):
+    pdp10assembler.assemble()
     assert pdp10assembler.current_pass == pdp10assembler.second_pass
+
+
+def test_assemble_method_sets_program_symbols(
+    mock_run_text_parse,
+    mock_run_first_pass_assembly,
+    mock_run_second_pass_assembly,
+    pdp10assembler,
+):
+    pdp10assembler.symbol_table = mock.Mock()
+    pdp10assembler.assemble()
+    assert (
+        pdp10assembler.program.symbols
+        == pdp10assembler.symbol_table.user_symbols.return_value
+    )
+
+
+def test_assemble_method_returns_program(
+    mock_run_text_parse,
+    mock_run_first_pass_assembly,
+    mock_run_second_pass_assembly,
+    pdp10assembler,
+):
+    assert pdp10assembler.assemble() == pdp10assembler.program
 
 
 def test_run_text_parse(mock_parse_text, pdp10assembler):
@@ -144,25 +195,40 @@ def test_parse_text(mock_SourceLine, pdp10assembler):
 # Integration Tests
 @pytest.fixture
 def test_symbol():
-    def _test_symbol(assembler, symbol, value, source_line):
-        symbols = assembler.symbol_table.symbol_table
-        assert symbol in symbols
-        assert isinstance(symbols[symbol], UserSymbol)
-        assert symbols[symbol].name == symbol
-        assert symbols[symbol].value == value
-        assert symbols[symbol].source_line == source_line
+    def _test_symbol(symbol, symbol_name, value, source_line):
+        assert isinstance(symbol, UserSymbol)
+        assert symbol.name == symbol_name
+        assert symbol.value == value
+        assert symbol.source_line == source_line
 
     return _test_symbol
 
 
 @pytest.fixture
-def assembly_test(test_symbol):
-    def _assembly_test(text, symbols, program):
+def test_assembled_value():
+    def _test_assembled_value(program, memory_location, binary_value):
+        assert memory_location in program.by_memory_location
+        assert isinstance(program.by_memory_location[memory_location], AssembledLine)
+        assembled_line = program.by_memory_location[memory_location]
+        assert assembled_line.memory_location == memory_location
+        assert assembled_line.binary_value == binary_value
+
+    return _test_assembled_value
+
+
+@pytest.fixture
+def assembly_test(test_symbol, test_assembled_value):
+    def _assembly_test(text, symbols, program_values):
         assembler = PDP10Assembler(text)
-        assembler.assemble()
-        for symbol_tuple in symbols:
-            test_symbol(assembler, *symbol_tuple)
-        assert assembler.program == program
+        program = assembler.assemble()
+        for i, symbol_tuple in enumerate(symbols):
+            test_symbol(program.symbols[i], *symbol_tuple)
+        for memory_location, binary_value in program_values.items():
+            test_assembled_value(
+                program=program,
+                memory_location=memory_location,
+                binary_value=binary_value,
+            )
 
     return _assembly_test
 
@@ -175,7 +241,7 @@ def test_assembly_of_hello_world(assembly_test, hello_world_text):
         ("FIN", 0o107, 14),
         ("POINT", 0o200, 17),
     ]
-    program = {
+    program_values = {
         0o000100: 0o200040000200,
         0o000101: 0o134100000001,
         0o000102: 0o322100000107,
@@ -190,7 +256,7 @@ def test_assembly_of_hello_world(assembly_test, hello_world_text):
         0o000203: 0o157162154144,
         0o000204: 0o041015012000,
     }
-    assembly_test(hello_world_text, symbols, program)
+    assembly_test(hello_world_text, symbols, program_values)
 
 
 @pytest.mark.integration_test
@@ -210,7 +276,7 @@ def test_assembly_of_memory_to_paper_tape_raw(
         ("NEWW", 0o770213, 30),
         ("FIN", 0o770215, 32),
     ]
-    program = {
+    program_values = {
         0o770200: 0o710200000050,
         0o770201: 0o200140000001,
         0o770202: 0o505100440600,
@@ -226,4 +292,4 @@ def test_assembly_of_memory_to_paper_tape_raw(
         0o770214: 0o254000770204,
         0o770215: 0o254200770200,
     }
-    assembly_test(memory_to_paper_tape_raw_text, symbols, program)
+    assembly_test(memory_to_paper_tape_raw_text, symbols, program_values)
