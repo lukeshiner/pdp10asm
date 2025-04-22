@@ -98,7 +98,7 @@ def test_listing_text_returns_listing():
     listing_class.return_value.listing_text.assert_called_once_with()
 
 
-@mock.patch("pdp10asm.program.Listing")
+@mock.patch("pdp10asm.program.BinaryListing")
 def test_listng_text_uses_defaults(mock_listing):
     program = Program()
     returned_value = program.listing_text()

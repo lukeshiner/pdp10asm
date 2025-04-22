@@ -3,8 +3,8 @@ from unittest import mock
 import pytest
 
 from pdp10asm.assembler import PDP10Assembler
-from pdp10asm.exceptions import AssemblyError
-from pdp10asm.program import Listing
+from pdp10asm.exceptions import ListingError
+from pdp10asm.listing import BinaryListing
 
 
 @pytest.fixture
@@ -14,19 +14,19 @@ def program():
 
 @pytest.fixture
 def listing(program):
-    return Listing(program=program)
+    return BinaryListing(program=program)
 
 
 def test_listing_takes_program(program):
-    assert Listing(program=program).program == program
+    assert BinaryListing(program=program).program == program
 
 
 def test_listing_takes_radix(program):
-    assert Listing(program=program, radix=16).radix == 16
+    assert BinaryListing(program=program, radix=16).radix == 16
 
 
 def test_listing_radix_defaults_to_8(program):
-    assert Listing(program).radix == 8
+    assert BinaryListing(program).radix == 8
 
 
 def test_listing_text(listing):
@@ -160,7 +160,7 @@ def test_format_36(value, radix, expected, listing):
 
 def test_format_36_raises_for_unsupported_radix(listing):
     listing.radix = 3
-    with pytest.raises(AssemblyError) as exc_info:
+    with pytest.raises(ListingError) as exc_info:
         listing._format_36(255)
     assert str(exc_info.value) == "Unsupported radix 3."
 
@@ -182,7 +182,7 @@ def test_format_12(value, radix, expected, listing):
 
 def test_format_12_raises_for_unsupported_radix(listing):
     listing.radix = 3
-    with pytest.raises(AssemblyError) as exc_info:
+    with pytest.raises(ListingError) as exc_info:
         listing._format_12(255)
     assert str(exc_info.value) == "Unsupported radix 3."
 
@@ -191,7 +191,7 @@ def test_format_12_raises_for_unsupported_radix(listing):
 def test_hello_world_listing(hello_world_text, hello_world_listing_text):
     assembler = PDP10Assembler(hello_world_text)
     program = assembler.assemble()
-    listing = Listing(program=program)
+    listing = BinaryListing(program=program)
     assert listing.listing_text() == hello_world_listing_text
 
 
@@ -201,5 +201,5 @@ def test_memory_to_paper_tape_raw_listing(
 ):
     assembler = PDP10Assembler(memory_to_paper_tape_raw_text)
     program = assembler.assemble()
-    listing = Listing(program=program)
+    listing = BinaryListing(program=program)
     assert listing.listing_text() == memory_to_paper_tape_raw_listing_text

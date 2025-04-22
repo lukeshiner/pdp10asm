@@ -2,7 +2,7 @@
 
 import click
 
-from pdp10asm import Listing, PDP10Assembler, RimOutput
+from pdp10asm import BinaryListing, PDP10Assembler, RimOutput
 
 RIM_FORMAT = "RIM"
 
@@ -10,7 +10,7 @@ OUTPUT_FORMATS = {RIM_FORMAT: RimOutput}
 
 BINARY_LISTING = "BINARY"
 
-LISTING_FORMATS = {BINARY_LISTING: Listing}
+LISTING_FORMATS = {BINARY_LISTING: BinaryListing}
 
 BINARY = "BIN"
 OCTAL = "OCT"
