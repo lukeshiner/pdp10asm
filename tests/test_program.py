@@ -25,8 +25,8 @@ def test_program_as_assembled_lines():
     assert Program().assembled_lines == []
 
 
-def test_program_has_by_source_line():
-    assert Program().by_source_line == {}
+def test_program_has_source_lines():
+    assert Program().source_lines == []
 
 
 def test_program_has_by_memory_location():
@@ -44,18 +44,6 @@ def test_add_line_returns_assembled_line(source_line, memory_location, binary_va
         binary_value=binary_value,
     )
     assert isinstance(returned_value, AssembledLine)
-
-
-def test_add_line_adds_assembled_line_to_by_source_line(
-    source_line, memory_location, binary_value
-):
-    program = Program()
-    assembled_line = program.add_line(
-        source_line=source_line,
-        memory_location=memory_location,
-        binary_value=binary_value,
-    )
-    assert program.by_source_line[source_line.source_line_number] == assembled_line
 
 
 def test_add_line_adds_assembled_line_to_by_memory_location(

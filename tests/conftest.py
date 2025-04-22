@@ -18,6 +18,13 @@ def hello_world_listing_text():
 
 
 @pytest.fixture()
+def hello_world_source_listing_text():
+    with open(Path(__file__).parent / "listings" / "hello_world_src.txt") as f:
+        text = f.read()
+    return text
+
+
+@pytest.fixture()
 def hello_world_rim_data():
     with open(Path(__file__).parent / "rim" / "hello_world.rim", "rb") as f:
         text = f.read()
@@ -37,6 +44,15 @@ def memory_to_paper_tape_raw_text():
 def memory_to_paper_tape_raw_listing_text():
     with open(
         Path(__file__).parent / "listings" / "memory_block_to_paper_tape_raw.txt"
+    ) as f:
+        text = f.read()
+    return text
+
+
+@pytest.fixture
+def memory_to_paper_tape_raw_source_listing_text():
+    with open(
+        Path(__file__).parent / "listings" / "memory_block_to_paper_tape_raw_src.txt"
     ) as f:
         text = f.read()
     return text

@@ -81,10 +81,14 @@ def test_program_line(listing):
     listing._format_memory_address = mock.Mock(return_value="LOC")
     listing._format_binary_value = mock.Mock(return_value="BIN")
     assert listing._program_line(assembled_line) == "LABELINSTLOCBIN"
-    listing._format_labels.assert_called_once_with(assembled_line)
-    listing._format_instruction_text.assert_called_once_with(assembled_line)
-    listing._format_memory_address.assert_called_once_with(assembled_line)
-    listing._format_binary_value.assert_called_once_with(assembled_line)
+    listing._format_labels.assert_called_once_with(assembled_line.source_line.labels)
+    listing._format_instruction_text.assert_called_once_with(
+        assembled_line.source_line.instruction_text
+    )
+    listing._format_memory_address.assert_called_once_with(
+        assembled_line.memory_location
+    )
+    listing._format_binary_value.assert_called_once_with(assembled_line.binary_value)
 
 
 def test_format_symbol_name(listing):
@@ -115,9 +119,7 @@ def test_format_symbol_line_number(listing):
     ),
 )
 def test_format_labels(labels, expected, listing):
-    assembled_line = mock.Mock()
-    assembled_line.source_line.labels = labels
-    assert listing._format_labels(assembled_line) == expected
+    assert listing._format_labels(labels) == expected
 
 
 @pytest.mark.parametrize(
@@ -128,19 +130,32 @@ def test_format_labels(labels, expected, listing):
     ),
 )
 def test_format_instruction_text(instruction_text, expected, listing):
-    assembled_line = mock.Mock()
-    assembled_line.source_line.instruction_text = instruction_text
-    assert listing._format_instruction_text(assembled_line) == expected
+    assert listing._format_instruction_text(instruction_text) == expected
 
 
-def test_format_memory_address(listing):
-    assembled_line = mock.Mock(memory_location=255)
-    assert listing._format_memory_address(assembled_line) == "000377    "
+@pytest.mark.parametrize(
+    "value,expected",
+    ((None, "          "), (255, "000377    ")),
+)
+def test_format_memory_address(value, expected, listing):
+    assert listing._format_memory_address(value) == expected
 
 
-def test_format_binary_value(listing):
-    assembled_line = mock.Mock(binary_value=255)
-    assert listing._format_binary_value(assembled_line) == "000000 000377 "
+@pytest.mark.parametrize(
+    "value,expected",
+    ((None, "              "), (255, "000000 000377 ")),
+)
+def test_format_binary_value(value, expected, listing):
+    assert listing._format_binary_value(value) == expected
+
+
+def test_format_source_line_number(listing):
+    assert listing._format_source_line_number(12) == "   12   "
+
+
+@pytest.mark.parametrize("value,expected", ((None, ""), ("comment", "comment")))
+def test_format_comment(value, expected, listing):
+    assert listing._format_comment(value) == expected
 
 
 @pytest.mark.parametrize(

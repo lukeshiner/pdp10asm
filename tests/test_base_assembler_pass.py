@@ -80,17 +80,20 @@ def test_process_line_raises_not_implemented(base_pass):
 
 def test_run_method(base_pass):
     base_pass.process_line = mock.Mock()
-    base_pass.assembler.source_lines = [mock.Mock(is_empty=False)] * 3
+    base_pass.assembler.program.source_lines = [mock.Mock(is_empty=False)] * 3
     base_pass.run()
     base_pass.process_line.assert_has_calls(
-        (mock.call(source_line) for source_line in base_pass.assembler.source_lines),
+        (
+            mock.call(source_line)
+            for source_line in base_pass.assembler.program.source_lines
+        ),
         any_order=False,
     )
 
 
 def test_run_method_skips_empty_instruction(base_pass):
     base_pass.process_line = mock.Mock()
-    base_pass.assembler.source_lines = [
+    base_pass.assembler.program.source_lines = [
         mock.Mock(is_empty=False),
         mock.Mock(is_empty=True),
         mock.Mock(is_empty=False),
@@ -98,8 +101,8 @@ def test_run_method_skips_empty_instruction(base_pass):
     base_pass.run()
     base_pass.process_line.assert_has_calls(
         (
-            mock.call(base_pass.assembler.source_lines[0]),
-            mock.call(base_pass.assembler.source_lines[2]),
+            mock.call(base_pass.assembler.program.source_lines[0]),
+            mock.call(base_pass.assembler.program.source_lines[2]),
         ),
         any_order=False,
     )
@@ -108,7 +111,7 @@ def test_run_method_skips_empty_instruction(base_pass):
 def test_run_method_stops_when_done_is_true(base_pass):
     base_pass.done = True
     base_pass.process_line = mock.Mock()
-    base_pass.assembler.source_lines = [mock.Mock(is_empty=False)] * 3
+    base_pass.assembler.program.source_lines = [mock.Mock(is_empty=False)] * 3
     base_pass.run()
     base_pass.process_line.assert_not_called()
 
@@ -118,9 +121,13 @@ def test_run_method_does_not_increment_program_counter_when_source_line_is_not_a
 ):
     base_pass.program_counter = 5
     base_pass.process_line = mock.Mock()
-    base_pass.assembler.source_lines = [mock.Mock(is_empty=False, is_assemblable=False)]
+    base_pass.assembler.program.source_lines = [
+        mock.Mock(is_empty=False, is_assemblable=False)
+    ]
     base_pass.run()
-    base_pass.process_line.assert_called_once_with(base_pass.assembler.source_lines[0])
+    base_pass.process_line.assert_called_once_with(
+        base_pass.assembler.program.source_lines[0]
+    )
     assert base_pass.program_counter == 5
 
 
@@ -129,9 +136,13 @@ def test_run_method_increments_program_counter_when_source_line_is_assemblable(
 ):
     base_pass.program_counter = 5
     base_pass.process_line = mock.Mock()
-    base_pass.assembler.source_lines = [mock.Mock(is_empty=False, is_assemblable=True)]
+    base_pass.assembler.program.source_lines = [
+        mock.Mock(is_empty=False, is_assemblable=True)
+    ]
     base_pass.run()
-    base_pass.process_line.assert_called_once_with(base_pass.assembler.source_lines[0])
+    base_pass.process_line.assert_called_once_with(
+        base_pass.assembler.program.source_lines[0]
+    )
     assert base_pass.program_counter == 6
 
 

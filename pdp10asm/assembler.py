@@ -52,7 +52,7 @@ class PDP10Assembler:
     def run_text_parse(self):
         """Run first pass assembly."""
         try:
-            self.source_lines = self.parse_text(self.text)
+            self.program.source_lines = self.parse_text(self.text)
         except AssemblyError as e:
             print(
                 f"Error in parsing source line {self.first_pass.source_line_number}",

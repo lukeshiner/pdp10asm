@@ -27,7 +27,7 @@ class BaseAssemblerPass:
 
     def run(self):
         """Run the assembly pass."""
-        for source_line in self.assembler.source_lines:
+        for source_line in self.assembler.program.source_lines:
             if self.done is True:
                 return
             if source_line.is_empty:

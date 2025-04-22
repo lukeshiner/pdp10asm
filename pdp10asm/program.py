@@ -22,7 +22,7 @@ class Program:
     def __init__(self):
         """Class for assembled programs."""
         self.assembled_lines = []
-        self.by_source_line = {}
+        self.source_lines = []
         self.by_memory_location = {}
         self.symbols = {}
 
@@ -44,9 +44,6 @@ class Program:
             binary_value=binary_value,
         )
         self.assembled_lines.append(source_line)
-        self.by_source_line[assembled_line.source_line.source_line_number] = (
-            assembled_line
-        )
         self.by_memory_location[memory_location] = assembled_line
         return assembled_line
 

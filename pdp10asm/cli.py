@@ -2,15 +2,16 @@
 
 import click
 
-from pdp10asm import BinaryListing, PDP10Assembler, RimOutput
+from pdp10asm import BinaryListing, PDP10Assembler, RimOutput, SourceListing
 
 RIM_FORMAT = "RIM"
 
 OUTPUT_FORMATS = {RIM_FORMAT: RimOutput}
 
 BINARY_LISTING = "BINARY"
+SOURCE_LISTING = "SOURCE"
 
-LISTING_FORMATS = {BINARY_LISTING: BinaryListing}
+LISTING_FORMATS = {BINARY_LISTING: BinaryListing, SOURCE_LISTING: SourceListing}
 
 BINARY = "BIN"
 OCTAL = "OCT"
@@ -87,12 +88,13 @@ CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
 @click.option(
     "-lf",
     "--listing-format",
-    type=click.Choice([BINARY_LISTING], case_sensitive=False),
+    type=click.Choice([BINARY_LISTING, SOURCE_LISTING], case_sensitive=False),
     default=BINARY_LISTING,
     show_default=True,
     help=(
         f"The format of the program listing. {BINARY_LISTING}: "
         "Basic listing with symbols, instructions, memory locations and binary values."
+        f"{SOURCE_LISTING}: Listing containing the full source code."
     ),
 )
 @click.option(
@@ -123,6 +125,7 @@ def cli(
     assembler = PDP10Assembler(source.read())
     program = assembler.assemble()
     click.secho("Assembly successful", fg="green")
+    click.echo()
     if no_listing is False:
         listing_class = LISTING_FORMATS[listing_format]
         listing_text = program.listing_text(

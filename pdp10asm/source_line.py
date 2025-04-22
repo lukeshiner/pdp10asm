@@ -2,6 +2,7 @@
 
 from .constants import Constants
 from .exceptions import AssemblyError
+from .program import AssembledLine
 
 
 class SourceLine:
@@ -35,6 +36,7 @@ class SourceLine:
         self.device_id = None
         self.arguments = None
         self.value = None
+        self.assembled_line = AssembledLine(self, None, None)
 
     def read_text(self):
         """Parse self.text."""

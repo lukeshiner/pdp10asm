@@ -142,4 +142,4 @@ def test_pager_option(mock_echo_via_pager, source_file, runner):
 def test_no_listing_option(source_file, runner):
     result = runner.invoke(cli, [source_file, "-nl"])
     assert result.exit_code == 0
-    assert result.output == "Assembling source.asm.\n\nAssembly successful\n"
+    assert result.output == "Assembling source.asm.\n\nAssembly successful\n\n"

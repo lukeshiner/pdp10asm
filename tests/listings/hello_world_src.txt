@@ -1,0 +1,25 @@
+        LABELS    INSTRUCTION         ADDRESS   VALUE           COMMENT                  
+_________________________________________________________________________________________
+    1                                                           HELLO WORLD
+    2                                                           
+    3                                                           Prints the string "Hello, World!" to the console.
+    4                                                           
+    5                                                           
+    6             LOC 100                                       
+    7             MOVE 1,POINT        000100    200040 000200   Store byte pointer
+    8   LOOP:     ILDB 2,1            000101    134100 000001   Load byte
+    9             JUMPE 2,FIN         000102    322100 000107   If byte is zero jump to end
+   10             DATAO TTY,2         000103    712140 000002   Send byte to TTY
+   11   PLOOP:    CONSZ TTY,20        000104    712300 000020   Skip if TTY buffer clear
+   12             JUMPA PLOOP         000105    324000 000104   Check buffer again
+   13             JUMPA LOOP          000106    324000 000101   Next character
+   14   FIN:      HALT 100            000107    254200 000100   
+   15                                                           
+   16             LOC 200                                       
+   17   POINT:    441100000201        000200    441100 000201   
+   18             110145154154        000201    110145 154154   String "Hell"
+   19             157054040127        000202    157054 040127   String "o, "
+   20             157162154144        000203    157162 154144   String "orld"
+   21             041015012000        000204    041015 012000   Strin "![cr][lf][NULL]"
+   22                                                           
+   23             END                                           
