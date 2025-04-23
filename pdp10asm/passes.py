@@ -28,6 +28,8 @@ class BaseAssemblerPass:
     def run(self):
         """Run the assembly pass."""
         for source_line in self.assembler.program.source_lines:
+            self.source_line_number = source_line.source_line_number
+            self.current_line = source_line.text.strip()
             if self.done is True:
                 return
             if source_line.is_empty:
@@ -164,7 +166,7 @@ class SecondPassAssembler(BaseAssemblerPass):
     def validate_accumulator_value(self, value):
         """Raise and exception if value is not a valid accumulator id."""
         if value < 0 or value > 0b1111:
-            raise AssemblyError(f"{value} is not a valid accumulator.")
+            raise AssemblyError(f"{value:04o} is not a valid accumulator.")
 
     def address_value(self, memory_address):
         """Return the address part of an operand word."""
@@ -175,7 +177,7 @@ class SecondPassAssembler(BaseAssemblerPass):
     def validate_address(self, value):
         """Raise AssemblyError if address is not valid."""
         if value < 0 or value > 0o777777:
-            raise AssemblyError(f"{value} is not a valid memory address.")
+            raise AssemblyError(f"{value:06o} is not a valid memory address.")
 
     def index_register_value(self, index_register):
         """Return the index regsiter part of an operand word."""
@@ -188,7 +190,7 @@ class SecondPassAssembler(BaseAssemblerPass):
     def validate_index_register_value(self, value):
         """Raise AssemblyError if index register is not valid."""
         if value < 0 or value > 0b1111:
-            raise AssemblyError(f"{value} is not a valid index register.")
+            raise AssemblyError(f"{value:02o} is not a valid index register.")
 
     def device_id_value(self, device_id):
         """Return the device ID part of an IO opreand word."""
@@ -201,4 +203,4 @@ class SecondPassAssembler(BaseAssemblerPass):
     def validate_device_id(self, value):
         """Raise AssemblyError if value is not a valid device ID."""
         if value < 0 or value > 0o774 or value % 4 != 0:
-            raise AssemblyError(f"{value} is not a valid device id.")
+            raise AssemblyError(f"{value:03o} is not a valid device id.")

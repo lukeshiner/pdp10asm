@@ -67,6 +67,13 @@ def memory_to_paper_tape_raw_rim_data():
     return text
 
 
+@pytest.fixture
+def second_pass_error_text():
+    with open(Path(__file__).parent / "asm" / "second_pass_error.asm") as f:
+        text = f.read()
+    return text
+
+
 class Instruction:
     def __init__(self, word):
         self.word = word

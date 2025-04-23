@@ -144,10 +144,18 @@ def test_run_text_parse(mock_parse_text, pdp10assembler):
 
 
 def test_run_text_parse_with_error(mock_parse_text, pdp10assembler):
-    mock_parse_text.side_effect = AssemblyError()
-    with pytest.raises(SystemExit):
+    pdp10assembler.current_pass = mock_parse_text
+    mock_parse_text.source_line_number = 12
+    mock_parse_text.current_line = "TEXT WITH ERROR"
+    mock_parse_text.side_effect = AssemblyError("error text")
+    with pytest.raises(AssemblyError) as e:
         pdp10assembler.run_text_parse()
     mock_parse_text.assert_called_once_with(pdp10assembler.text)
+    assert e.value.__notes__ == [
+        "During source processing on line 12:",
+        "'TEXT WITH ERROR'",
+        "error text",
+    ]
 
 
 def test_run_first_pass_assembly(mock_first_pass, pdp10assembler):
@@ -156,10 +164,18 @@ def test_run_first_pass_assembly(mock_first_pass, pdp10assembler):
 
 
 def test_run_first_pass_assembly_with_error(mock_first_pass, pdp10assembler):
-    mock_first_pass.run.side_effect = AssemblyError()
-    with pytest.raises(SystemExit):
+    pdp10assembler.current_pass = mock_first_pass
+    mock_first_pass.source_line_number = 12
+    mock_first_pass.current_line = "TEXT WITH ERROR"
+    mock_first_pass.run.side_effect = AssemblyError("error text")
+    with pytest.raises(AssemblyError) as e:
         pdp10assembler.run_first_pass_assembly()
     mock_first_pass.run.assert_called_once_with()
+    assert e.value.__notes__ == [
+        "During first pass on line 12:",
+        "'TEXT WITH ERROR'",
+        "error text",
+    ]
 
 
 def test_run_second_pass_assembly(mock_second_pass, pdp10assembler):
@@ -168,10 +184,18 @@ def test_run_second_pass_assembly(mock_second_pass, pdp10assembler):
 
 
 def test_run_second_pass_assembly_with_error(mock_second_pass, pdp10assembler):
-    mock_second_pass.run.side_effect = AssemblyError()
-    with pytest.raises(SystemExit):
+    pdp10assembler.current_pass = mock_second_pass
+    mock_second_pass.source_line_number = 12
+    mock_second_pass.current_line = "TEXT WITH ERROR"
+    mock_second_pass.run.side_effect = AssemblyError("error text")
+    with pytest.raises(AssemblyError) as e:
         pdp10assembler.run_second_pass_assembly()
     mock_second_pass.run.assert_called_once_with()
+    assert e.value.__notes__ == [
+        "During second pass on line 12:",
+        "'TEXT WITH ERROR'",
+        "error text",
+    ]
 
 
 @mock.patch("pdp10asm.assembler.SourceLine")

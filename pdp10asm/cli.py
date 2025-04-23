@@ -2,7 +2,7 @@
 
 import click
 
-from pdp10asm import BinaryListing, PDP10Assembler, RimOutput, SourceListing
+from pdp10asm import BinaryListing, PDP10Assembler, RimOutput, SourceListing, exceptions
 
 RIM_FORMAT = "RIM"
 
@@ -119,29 +119,57 @@ def cli(
     listing_radix,
 ):
     """DEC PDP-10 Assembler."""
-    click.echo(f"Assembling {click.format_filename(source.name)}.")
-    click.echo()
+    click.echo(f"Assembling {click.format_filename(source.name)}.\n")
     output_class = OUTPUT_FORMATS[format]
-    assembler = PDP10Assembler(source.read())
-    program = assembler.assemble()
-    click.secho("Assembly successful", fg="green")
-    click.echo()
+    program = _assemble_program(source)
+    click.secho("Assembly successful\n", fg="green")
     if no_listing is False:
-        listing_class = LISTING_FORMATS[listing_format]
-        listing_text = program.listing_text(
-            listing_class=listing_class, radix=RADICIES[listing_radix]
+        _handle_listing(
+            program=program,
+            listing_format=listing_format,
+            listing_radix=listing_radix,
+            paged=paged,
+            listing_path=listing_path,
         )
-        if paged is True:
-            click.echo_via_pager(listing_text)
-        else:
-            click.echo(listing_text)
-        if listing_path:
-            with open(listing_path, "w") as f:
-                f.write(listing_text)
-            click.secho(
-                f"Saved listing to {click.format_filename(listing_path)}", fg="green"
-            )
     if output_path is not None:
         output = output_class(program)
         output.write_file(output_path, loader=loader, halt=halt)
         click.secho(f"Saved binary to {click.format_filename(output_path)}", fg="green")
+
+
+def _assemble_program(source):
+    try:
+        assembler = PDP10Assembler(source.read())
+        program = assembler.assemble()
+    except exceptions.AssemblyError as e:
+        raise click.ClickException("\n".join(e.__notes__)) from e
+    else:
+        return program
+
+
+def _get_listing_text(program, listing_format, listing_radix):
+    try:
+        listing_class = LISTING_FORMATS[listing_format]
+        return program.listing_text(
+            listing_class=listing_class, radix=RADICIES[listing_radix]
+        )
+    except exceptions.ListingError as e:
+        raise click.ClickException(str(e)) from e
+
+
+def _handle_listing(program, listing_format, listing_radix, paged, listing_path):
+    listing_text = _get_listing_text(
+        program=program, listing_format=listing_format, listing_radix=listing_radix
+    )
+    if paged is True:
+        click.echo_via_pager(listing_text)
+    else:
+        click.echo(listing_text)
+    if listing_path:
+        _write_listing(listing_text=listing_text, listing_path=listing_path)
+
+
+def _write_listing(listing_text, listing_path):
+    with open(listing_path, "w") as f:
+        f.write(listing_text)
+    click.secho(f"Saved listing to {click.format_filename(listing_path)}", fg="green")

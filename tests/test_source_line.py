@@ -9,7 +9,7 @@ from pdp10asm.source_line import SourceLine
 
 @pytest.fixture
 def text():
-    return ""
+    return "some text"
 
 
 @pytest.fixture
@@ -417,6 +417,24 @@ def test_read_text_does_not_call_parse_arguments_with_operator(
     mock_parse_arguments.assert_called_once_with(mock_read_operator.return_value)
 
 
+def test_read_text_raises_for_invalid_operator(
+    mock_read_comment,
+    mock_read_labels,
+    mock_read_assignment,
+    mock_read_operator,
+    mock_parse_instruction_type,
+    mock_parse_arguments,
+    source_line,
+    text,
+):
+    source_line.operator = "text"
+    mock_parse_arguments.side_effect = Exception()
+    mock_read_operator.return_value = "invalid text"
+    with pytest.raises(AssemblyError) as e:
+        source_line.read_text()
+    assert str(e.value) == "Unable to parse argument 'invalid text'."
+
+
 @pytest.fixture
 def mock_parse_primary_operand(source_line):
     source_line._parse_primary_operand = mock.Mock()
@@ -503,8 +521,8 @@ def test_parse_arguments_with_invalid_value(
     text,
 ):
     with pytest.raises(AssemblyError) as exc_info:
-        source_line._parse_arguments(text)
-    assert str(exc_info.value) == "Statement not understood."
+        source_line._parse_arguments("")
+    assert str(exc_info.value) == "Statement not understood ''."
     assert source_line.arguments is None
     mock_parse_primary_operand.assert_not_called()
     mock_parse_io_operand.assert_not_called()

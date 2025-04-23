@@ -50,7 +50,12 @@ class SourceLine:
         if self.operator is None:
             return
         self._parse_instruction_type(text)
-        self._parse_arguments(text)
+        try:
+            self._parse_arguments(text)
+        except Exception as e:
+            raise AssemblyError(f"Unable to parse argument {text!r}.").with_traceback(
+                e.__traceback__
+            ) from e
 
     @staticmethod
     def is_symbol(word):
@@ -150,7 +155,7 @@ class SourceLine:
         elif self.is_value:
             self._parse_value(text)
         else:
-            raise AssemblyError("Statement not understood.")
+            raise AssemblyError(f"Statement not understood {text!r}.")
 
     def _parse_value(self, text):
         return text

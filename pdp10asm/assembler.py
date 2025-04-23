@@ -1,7 +1,5 @@
 """The main PDP10Assembler class."""
 
-import sys
-
 from .exceptions import AssemblyError
 from .passes import FirstPassAssembler, SecondPassAssembler
 from .program import Program
@@ -54,36 +52,31 @@ class PDP10Assembler:
         try:
             self.program.source_lines = self.parse_text(self.text)
         except AssemblyError as e:
-            print(
-                f"Error in parsing source line {self.first_pass.source_line_number}",
-                file=sys.stderr,
-            )
-            print(self.first_pass.current_line, file=sys.stderr)
-            print(str(e), file=sys.stderr)
-            sys.exit(1)
+            for line in self._create_error_message("source processing", e):
+                e.add_note(line)
+            raise e
 
     def run_first_pass_assembly(self):
         """Run first pass assembly."""
         try:
             self.first_pass.run()
         except AssemblyError as e:
-            print(
-                f"Error in first pass on line {self.first_pass.source_line_number}",
-                file=sys.stderr,
-            )
-            print(self.first_pass.current_line, file=sys.stderr)
-            print(str(e), file=sys.stderr)
-            sys.exit(1)
+            for line in self._create_error_message("first pass", e):
+                e.add_note(line)
+            raise e
 
     def run_second_pass_assembly(self):
         """Run second pass assembly."""
         try:
             self.second_pass.run()
         except AssemblyError as e:
-            print(
-                f"Error in second pass on line {self.second_pass.source_line_number}",
-                file=sys.stderr,
-            )
-            print(self.second_pass.current_line, file=sys.stderr)
-            print(str(e), file=sys.stderr)
-            sys.exit(1)
+            for line in self._create_error_message("second pass", e):
+                e.add_note(line)
+            raise e
+
+    def _create_error_message(self, pass_name, exception):
+        return [
+            f"During {pass_name} on line {self.current_pass.source_line_number}:",
+            f"{self.current_pass.current_line!r}",
+            str(exception),
+        ]

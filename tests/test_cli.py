@@ -4,6 +4,7 @@ from unittest import mock
 import pytest
 from click.testing import CliRunner
 
+from pdp10asm import exceptions
 from pdp10asm.cli import cli
 
 
@@ -143,3 +144,45 @@ def test_no_listing_option(source_file, runner):
     result = runner.invoke(cli, [source_file, "-nl"])
     assert result.exit_code == 0
     assert result.output == "Assembling source.asm.\n\nAssembly successful\n\n"
+
+
+@mock.patch("pdp10asm.cli.PDP10Assembler")
+def test_error_creating_assembler(mock_assembler, source_file, runner):
+    mock_assembler.side_effect = exceptions.AssemblyError()
+    mock_assembler.side_effect.add_note("error text")
+    result = runner.invoke(cli, [source_file])
+    assert result.exit_code == 1
+    assert "error text" in result.output
+
+
+@mock.patch("pdp10asm.cli.PDP10Assembler")
+def test_error_running_assembler(mock_assembler, source_file, runner):
+    mock_assembler.return_value.assemble.side_effect = exceptions.AssemblyError()
+    mock_assembler.return_value.assemble.side_effect.add_note("error text")
+    result = runner.invoke(cli, [source_file])
+    assert result.exit_code == 1
+    assert "error text" in result.output
+
+
+@mock.patch("pdp10asm.cli.PDP10Assembler")
+def test_error_creating_listing(mock_assembler, source_file, runner):
+    mock_assembler.return_value.assemble.return_value.listing_text.side_effect = (
+        exceptions.ListingError("error text")
+    )
+    result = runner.invoke(cli, [source_file])
+    assert result.exit_code == 1
+    assert "error text" in result.output
+
+
+@pytest.mark.integration_test
+def test_second_pass_error(filesystem, runner, second_pass_error_text):
+    source_path = "source.asm"
+    with open(source_path, "w") as f:
+        f.write(second_pass_error_text)
+    result = runner.invoke(cli, [source_path])
+    assert result.exit_code == 1
+    assert result.output == (
+        "Assembling source.asm.\n\n"
+        "Error: During second pass on line 1:\n'DATAO 777,0'\n"
+        "777 is not a valid device id.\n"
+    )
