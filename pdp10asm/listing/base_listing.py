@@ -1,5 +1,7 @@
 """Classes for creating program listings."""
 
+from importlib.metadata import version
+
 from pdp10asm.exceptions import ListingError
 
 
@@ -22,6 +24,32 @@ class BaseListing:
         """Class for creating assembly listings."""
         self.program = program
         self.radix = radix
+
+    def heading_text(self):
+        """Return the listing heading."""
+        lines = [
+            self.program.title,
+            self.program.subtitle,
+            f"Assembled with pdp10asm {version('pdp10asm')}",
+        ]
+        return "\n".join(lines)
+
+    def symbols_listing_text(self):
+        """Return the symbols listing text."""
+        lines = []
+        lines.append("SYMBOLS")
+        lines.append("_______")
+        for symbol in self.program.symbols:
+            lines.append(self._symbol_line(symbol))
+        return "\n".join(lines)
+
+    def _symbol_line(self, symbol):
+        line = [
+            self._format_symbol_name(symbol),
+            self._format_symbol_value(symbol),
+            self._format_symbol_line_number(symbol),
+        ]
+        return "".join(line)
 
     def _format_symbol_name(self, symbol):
         text = f"{symbol.name}:"

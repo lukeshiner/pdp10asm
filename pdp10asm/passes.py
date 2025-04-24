@@ -1,5 +1,7 @@
 """Classes for first and second pass assembly."""
 
+from pdp10asm.pseudo_operators import PseudoOperators
+
 from .constants import Constants
 from .exceptions import AssemblyError
 from .expressions import ExpressionParser
@@ -18,7 +20,6 @@ class BaseAssemblerPass:
         """
         self.assembler = assembler
         self.symbol_table = assembler.symbol_table
-        self.pseudo_operators = assembler.pseudo_operators
         self.program_counter = 0
         self.source_line_number = 0
         self.current_line = ""
@@ -37,13 +38,6 @@ class BaseAssemblerPass:
             self.process_line(source_line)
             if source_line.is_assemblable:
                 self.program_counter += 1
-
-    def handle_pseudo_operator(self, source_line):
-        """Execute an assembler instruction."""
-        values = [self.literal_value(value) for value in source_line.arguments.split()]
-        self.pseudo_operators.process_instruction(
-            instruction_word=source_line.operator, values=values
-        )
 
     def process_line(self, words):
         """Process a line of assembly."""
@@ -78,6 +72,12 @@ class FirstPassAssembler(BaseAssemblerPass):
             self.handle_assignments(source_line)
         else:
             self.handle_labels(source_line)
+
+    def handle_pseudo_operator(self, source_line):
+        """Execute an assembler instruction."""
+        operator = PseudoOperators.get_pseudo_op(source_line.operator)
+        if operator.first_pass is True:
+            operator.process(assembler=self.assembler, source_line=source_line)
 
     def handle_labels(self, source_line):
         """Add labels to the symbol table and return words without them."""
@@ -134,6 +134,12 @@ class SecondPassAssembler(BaseAssemblerPass):
         else:
             raise AssemblyError(f"Unable to parse line {source_line.text!r}")
         return operator_binary | operand
+
+    def handle_pseudo_operator(self, source_line):
+        """Execute an assembler instruction."""
+        operator = PseudoOperators.get_pseudo_op(source_line.operator)
+        if operator.second_pass is True:
+            operator.process(assembler=self.assembler, source_line=source_line)
 
     def primary_operand_value(self, source_line):
         """Return the operand part of an instruction word."""

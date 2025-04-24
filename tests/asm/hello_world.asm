@@ -1,4 +1,5 @@
-;   HELLO WORLD
+        TITLE HELLO WORLD
+        SUBTTLE Print "Hello, World!" to TTY
 ;
 ;   Prints the string "Hello, World!" to the console.
 ;

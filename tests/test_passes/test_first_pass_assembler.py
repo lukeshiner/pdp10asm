@@ -3,7 +3,6 @@ from unittest import mock
 import pytest
 
 from pdp10asm.passes import FirstPassAssembler
-from pdp10asm.pseudo_operators import PseudoOperators
 from pdp10asm.symbol_table import SymbolTable
 
 
@@ -11,7 +10,6 @@ from pdp10asm.symbol_table import SymbolTable
 def mock_assembler():
     assembler = mock.Mock()
     assembler.symbol_table = SymbolTable()
-    assembler.pseudo_operators = PseudoOperators(assembler)
     return assembler
 
 
@@ -96,6 +94,31 @@ def test_process_line_calls_handle_assignments(
     source_line.is_assignment = True
     first_pass_assembler.process_line(source_line)
     mock_handle_assignments.assert_called_once_with(source_line)
+
+
+@mock.patch("pdp10asm.passes.PseudoOperators")
+def test_handle_pseudo_operator_with_first_pass_operator(
+    mock_pseudo_operators, first_pass_assembler, source_line
+):
+    operator = mock.Mock(first_pass=True)
+    mock_pseudo_operators.get_pseudo_op.return_value = operator
+    first_pass_assembler.handle_pseudo_operator(source_line)
+    mock_pseudo_operators.get_pseudo_op.assert_called_once_with(source_line.operator)
+    operator.process.assert_called_once_with(
+        assembler=first_pass_assembler.assembler, source_line=source_line
+    )
+
+
+@mock.patch("pdp10asm.passes.PseudoOperators")
+def test_handle_pseudo_operator_with_non_first_pass_operator(
+    mock_pseudo_operators, first_pass_assembler, source_line
+):
+    first_pass_assembler._handle_pseudo_operator = mock.Mock()
+    operator = mock.Mock(first_pass=False)
+    mock_pseudo_operators.get_pseudo_op.return_value = operator
+    first_pass_assembler.handle_pseudo_operator(source_line)
+    mock_pseudo_operators.get_pseudo_op.assert_called_once_with(source_line.operator)
+    operator.process.assert_not_called()
 
 
 def test_handle_labels(first_pass_assembler, source_line):

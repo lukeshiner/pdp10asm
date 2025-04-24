@@ -11,9 +11,11 @@ class SourceListing(BaseListing):
 
     def listing_text(self):
         """Return the program listing as a string."""
+        heading = self.heading_text()
         header = self._header()
+        symbols = self.symbols_listing_text()
         source_lines = self._source_lines()
-        return f"{header}\n{source_lines}"
+        return "\n\n".join((heading, symbols, header, source_lines))
 
     def _source_line(self, source_line):
         line = [

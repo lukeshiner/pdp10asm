@@ -1,5 +1,7 @@
 """The SourceLine class."""
 
+from pdp10asm.pseudo_operators import PseudoOperators
+
 from .constants import Constants
 from .exceptions import AssemblyError
 from .program import AssembledLine
@@ -57,21 +59,6 @@ class SourceLine:
                 e.__traceback__
             ) from e
 
-    @staticmethod
-    def is_symbol(word):
-        """Return True if word is a symbol, otherwise False."""
-        if word[0].isnumeric():
-            return False
-        for character in word:
-            if (
-                not character.isalnum()
-                and character not in Constants.SYMBOL_SPECIAL_CHARACTERS
-            ):
-                return False
-            if word == ".":
-                return False
-        return True
-
     def _read_comment(self, text):
         if Constants.COMMENT in text:
             text, comment = text.split(Constants.COMMENT, maxsplit=1)
@@ -85,7 +72,7 @@ class SourceLine:
         while Constants.LABEL in text:
             label, text = text.split(Constants.LABEL, maxsplit=1)
             label = label.strip()
-            if not self.is_symbol(label):
+            if not Constants.is_symbol(label):
                 raise AssemblyError(f"Invalid label {label!r}.")
             self.labels.append(label.strip())
         text = text.strip()
@@ -124,10 +111,9 @@ class SourceLine:
 
     def _parse_instruction_type(self, text):
         symbol_table = self.assembler.symbol_table
-        pseudo_operators = self.assembler.pseudo_operators
         if self.operator is None:
             return
-        elif pseudo_operators.is_pseudo_operator(self.operator) is True:
+        elif PseudoOperators.is_pseudo_op(self.operator) is True:
             self.is_pseudo_operator = True
         elif symbol_table.is_primary_instruction_symbol(self.operator) is True:
             self.is_instruction = True

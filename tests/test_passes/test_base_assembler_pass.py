@@ -42,12 +42,6 @@ def mock_symbol_or_value(base_pass):
     return base_pass.symbol_or_value
 
 
-@pytest.fixture
-def mock_pseudo_operators(base_pass):
-    base_pass.pseudo_operators = mock.Mock()
-    return base_pass.pseudo_operators
-
-
 def test_base_assmbler_pass_has_assembler(base_pass, mock_assembler):
     assert base_pass.assembler == mock_assembler
 
@@ -55,10 +49,6 @@ def test_base_assmbler_pass_has_assembler(base_pass, mock_assembler):
 def test_base_assembler_pass_has_symbol_table(mock_assembler):
     base_pass = BaseAssemblerPass(assembler=mock_assembler)
     assert base_pass.symbol_table == mock_assembler.symbol_table
-
-
-def test_base_assembler_pass_has_pseudo_operators(mock_assembler, base_pass):
-    assert base_pass.pseudo_operators == mock_assembler.pseudo_operators
 
 
 def test_base_assembler_pass_has_program_counter(base_pass):
@@ -144,27 +134,6 @@ def test_run_method_increments_program_counter_when_source_line_is_assemblable(
         base_pass.assembler.program.source_lines[0]
     )
     assert base_pass.program_counter == 6
-
-
-def test_handle_pseudo_operator_method(
-    base_pass, mock_pseudo_operators, mock_literal_value
-):
-    source_line = mock.Mock(operator="INST", arguments="500 250")
-    base_pass.handle_pseudo_operator(source_line)
-    mock_literal_value.assert_has_calls(
-        (
-            mock.call("500"),
-            mock.call("250"),
-        ),
-        any_order=False,
-    )
-    mock_pseudo_operators.process_instruction.assert_called_once_with(
-        instruction_word="INST",
-        values=[
-            mock_literal_value.return_value,
-            mock_literal_value.return_value,
-        ],
-    )
 
 
 def test_symbol_value(base_pass, symbol):

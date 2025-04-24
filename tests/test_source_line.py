@@ -177,9 +177,12 @@ def test_parse_instruction_type_with_no_operator(source_line):
     assert source_line.is_value is False
 
 
-def test_parse_instruction_type_with_pseudo_operator(source_line):
+@mock.patch("pdp10asm.source_line.PseudoOperators")
+def test_parse_instruction_type_with_pseudo_operator(
+    mock_pseduo_operators, source_line
+):
     source_line.operator = "text"
-    source_line.assembler.pseudo_operators.is_pseudo_operator.return_value = True
+    mock_pseduo_operators.is_pseudo_op.return_value = True
     source_line._parse_instruction_type("")
     assert source_line.is_pseudo_operator is True
     assert source_line.is_assignment is False
@@ -615,30 +618,6 @@ def test_parse_io_operand(
     assert source_line.memory_address == memory
     assert source_line.is_indirect == indirect
     assert source_line.accumulator is None
-
-
-@pytest.mark.parametrize(
-    "word,expected",
-    (
-        ("HELLO", True),
-        ("500", False),
-        ("TTY,50", False),
-        ("F500", True),
-        ("AB@C", False),
-        ("$LABEL", True),
-        ("LABEL$", True),
-        ("LA$BLE", True),
-        (".LAB", True),
-        ("L.AB", True),
-        ("LAB.", True),
-        ("%LAB", True),
-        ("LAB%", True),
-        ("LA%B", True),
-        (".", False),
-    ),
-)
-def test_is_symbol(word, expected):
-    assert SourceLine.is_symbol(word) is expected
 
 
 @pytest.fixture

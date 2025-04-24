@@ -3,7 +3,6 @@
 from .exceptions import AssemblyError
 from .passes import FirstPassAssembler, SecondPassAssembler
 from .program import Program
-from .pseudo_operators import PseudoOperators
 from .source_line import SourceLine
 from .symbol_table import SymbolTable
 
@@ -19,7 +18,6 @@ class PDP10Assembler:
             text(str): The source code to assemble.
         """
         self.symbol_table = SymbolTable()
-        self.pseudo_operators = PseudoOperators(self)
         self.text = text
         self.program = Program()
         self.source_line_number = 0

@@ -43,3 +43,18 @@ class Constants:
         SUBTRACTION_OPERATOR,
     ]
     PROGRAM_COUNTER_OPERAND = "."
+
+    @staticmethod
+    def is_symbol(word):
+        """Return True if word is a symbol, otherwise False."""
+        if word[0].isnumeric():
+            return False
+        for character in word:
+            if (
+                not character.isalnum()
+                and character not in Constants.SYMBOL_SPECIAL_CHARACTERS
+            ):
+                return False
+            if word == ".":
+                return False
+        return True

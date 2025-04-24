@@ -2,7 +2,6 @@
 
 from .constants import Constants
 from .exceptions import AssemblyError
-from .source_line import SourceLine
 
 
 class Operations:
@@ -80,7 +79,7 @@ class ExpressionParser:
             return token
         if token == Constants.PROGRAM_COUNTER_OPERAND:
             return self.assembler.current_pass.program_counter
-        if SourceLine.is_symbol(token):
+        if Constants.is_symbol(token):
             return self.assembler.symbol_table.get_symbol_value(token)
         return self.value_to_int(token)
 

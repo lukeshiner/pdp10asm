@@ -39,10 +39,6 @@ def test_second_pass_assembler_pass_has_symbol_table(mock_assembler):
     assert second_pass.symbol_table == mock_assembler.symbol_table
 
 
-def test_second_pass_assembler_pass_has_pseudo_operators(mock_assembler, second_pass):
-    assert second_pass.pseudo_operators == mock_assembler.pseudo_operators
-
-
 def test_second_pass_assembler_pass_has_program_counter(second_pass):
     assert second_pass.program_counter == 0
 
@@ -177,6 +173,31 @@ def mock_primary_operand_value(second_pass):
 def mock_io_operand_value(second_pass):
     second_pass.io_operand_value = mock.Mock(return_value=457)
     return second_pass.io_operand_value
+
+
+@mock.patch("pdp10asm.passes.PseudoOperators")
+def test_handle_pseudo_operator_with_second_pass_operator(
+    mock_pseudo_operators, second_pass, source_line
+):
+    operator = mock.Mock(second_pass=True)
+    mock_pseudo_operators.get_pseudo_op.return_value = operator
+    second_pass.handle_pseudo_operator(source_line)
+    mock_pseudo_operators.get_pseudo_op.assert_called_once_with(source_line.operator)
+    operator.process.assert_called_once_with(
+        assembler=second_pass.assembler, source_line=source_line
+    )
+
+
+@mock.patch("pdp10asm.passes.PseudoOperators")
+def test_handle_pseudo_operator_with_non_second_pass_operator(
+    mock_pseudo_operators, second_pass, source_line
+):
+    second_pass._handle_pseudo_operator = mock.Mock()
+    operator = mock.Mock(second_pass=False)
+    mock_pseudo_operators.get_pseudo_op.return_value = operator
+    second_pass.handle_pseudo_operator(source_line)
+    mock_pseudo_operators.get_pseudo_op.assert_called_once_with(source_line.operator)
+    operator.process.assert_not_called()
 
 
 def test_assemble_line_returns_parsed_expression_when_passed_value(

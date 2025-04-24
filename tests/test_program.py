@@ -21,6 +21,14 @@ def binary_value():
     return 0o202000100000
 
 
+def test_program_has_title():
+    assert Program().title == "Untitled"
+
+
+def test_program_has_subtitle():
+    assert Program().subtitle == ""
+
+
 def test_program_as_assembled_lines():
     assert Program().assembled_lines == []
 

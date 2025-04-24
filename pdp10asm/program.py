@@ -21,6 +21,8 @@ class Program:
 
     def __init__(self):
         """Class for assembled programs."""
+        self.title = "Untitled"
+        self.subtitle = ""
         self.assembled_lines = []
         self.source_lines = []
         self.by_memory_location = {}

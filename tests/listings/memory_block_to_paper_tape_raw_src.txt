@@ -1,36 +1,56 @@
+Memory Block to Paper Tape Raw
+Writes a block of memory to PTP
+Assembled with pdp10asm 0.1.0
+
+SYMBOLS
+_______
+START:    000000 770200   DEFINED ON: 10        
+STARTADD: 000000 000000   DEFINED ON: 12        
+NBYTES:   000000 000001   DEFINED ON: 13        
+POINT:    000000 000002   DEFINED ON: 14        
+CURADD:   000000 000003   DEFINED ON: 15        
+BLEFT:    000000 000004   DEFINED ON: 16        
+OUT:      000000 000005   DEFINED ON: 17        
+WORDL:    000000 770204   DEFINED ON: 24        
+BYTEL:    000000 770205   DEFINED ON: 25        
+NEWW:     000000 770213   DEFINED ON: 31        
+FIN:      000000 770215   DEFINED ON: 33        
+
         LABELS    INSTRUCTION         ADDRESS   VALUE           COMMENT                  
 _________________________________________________________________________________________
-    1                                                           Memory Block to Paper Tape Raw
-    2                                                           
-    3                                                           Punches the contents of memory to paper tape.
-    4                                                           
-    5                                                           The start address of the data punched is taken from AC0.
-    6                                                           The number of addresses to punch is taken from AC1.
-    7                                                           
+
+    1             TITLE Memory Block to Paper Tape Raw                          
+    2             SUBTTLE Writes a block of memory to PTP                          
+    3                                                           
+    4                                                           Punches the contents of memory to paper tape.
+    5                                                           
+    6                                                           The start address of the data punched is taken from AC0.
+    7                                                           The number of addresses to punch is taken from AC1.
     8                                                           
-    9             START=770200                                  
-   10                                                           
-   11             STARTADD=0                                    
-   12             NBYTES=1                                      
-   13             POINT=2                                       
-   14             CURADD=3                                      
-   15             BLEFT=4                                       
-   16             OUT=5                                         
-   17                                                           
-   18             LOC 770200                                    
-   19             CONO PTP,50         770200    710200 000050   
-   20             MOVE CURADD,NBYTES  770201    200140 000001   
-   21             HRLI POINT,440600   770202    505100 440600   
-   22             HRR POINT,0         770203    540100 000000   
-   23   WORDL:    MOVEI BLEFT,6       770204    201200 000006   
-   24   BYTEL:    ILDB OUT,POINT      770205    134240 000002   
-   25             DATAO PTP,OUT       770206    710140 000005   
-   26             CONSO PTP,10        770207    710340 000010   
-   27             JRST .-1            770210    254000 770207   
-   28             SOJE BLEFT,NEWW     770211    362200 770213   
-   29             JRST BYTEL          770212    254000 770205   
-   30   NEWW:     SOJL 3,FIN          770213    361140 770215   
-   31             JRST WORDL          770214    254000 770204   
-   32   FIN:      HALT START          770215    254200 770200   
-   33                                                           
-   34             END                                           
+    9                                                           
+   10             START=770200                                  
+   11                                                           
+   12             STARTADD=0                                    
+   13             NBYTES=1                                      
+   14             POINT=2                                       
+   15             CURADD=3                                      
+   16             BLEFT=4                                       
+   17             OUT=5                                         
+   18                                                           
+   19             LOC 770200                                    
+   20             CONO PTP,50         770200    710200 000050   
+   21             MOVE CURADD,NBYTES  770201    200140 000001   
+   22             HRLI POINT,440600   770202    505100 440600   
+   23             HRR POINT,0         770203    540100 000000   
+   24   WORDL:    MOVEI BLEFT,6       770204    201200 000006   
+   25   BYTEL:    ILDB OUT,POINT      770205    134240 000002   
+   26             DATAO PTP,OUT       770206    710140 000005   
+   27             CONSO PTP,10        770207    710340 000010   
+   28             JRST .-1            770210    254000 770207   
+   29             SOJE BLEFT,NEWW     770211    362200 770213   
+   30             JRST BYTEL          770212    254000 770205   
+   31   NEWW:     SOJL 3,FIN          770213    361140 770215   
+   32             JRST WORDL          770214    254000 770204   
+   33   FIN:      HALT START          770215    254200 770200   
+   34                                                           
+   35             END                                           

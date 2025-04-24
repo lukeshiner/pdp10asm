@@ -1,8 +1,13 @@
-SYMBOLS:
-LOOP:     000000 000101   DEFINED ON: 8         
-PLOOP:    000000 000104   DEFINED ON: 11        
-FIN:      000000 000107   DEFINED ON: 14        
-POINT:    000000 000200   DEFINED ON: 17        
+HELLO WORLD
+Print "Hello, World!" to TTY
+Assembled with pdp10asm 0.1.0
+
+SYMBOLS
+_______
+LOOP:     000000 000101   DEFINED ON: 9         
+PLOOP:    000000 000104   DEFINED ON: 12        
+FIN:      000000 000107   DEFINED ON: 15        
+POINT:    000000 000200   DEFINED ON: 18        
 
 LABELS        INSTRUCTION         ADDRESS   VALUE         
 __________________________________________________________

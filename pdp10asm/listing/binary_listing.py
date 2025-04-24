@@ -17,17 +17,10 @@ class BinaryListing(BaseListing):
 
     def listing_text(self):
         """Return the program listing as a string."""
+        heading = self.heading_text()
         symbols_text = self.symbols_listing_text()
         program_text = self.program_listing_text()
-        return "\n\n".join((symbols_text, program_text))
-
-    def symbols_listing_text(self):
-        """Return the symbols listing text."""
-        lines = []
-        lines.append("SYMBOLS:")
-        for symbol in self.program.symbols:
-            lines.append(self._symbol_line(symbol))
-        return "\n".join(lines)
+        return "\n\n".join((heading, symbols_text, program_text))
 
     def program_listing_text(self):
         """Return the program listing text."""
@@ -48,14 +41,6 @@ class BinaryListing(BaseListing):
             header.append(f"{{:<{width}}}".format(text))
             underline.append(f"{{:_<{width}}}".format(""))
         return ["".join(header), "".join(underline)]
-
-    def _symbol_line(self, symbol):
-        line = [
-            self._format_symbol_name(symbol),
-            self._format_symbol_value(symbol),
-            self._format_symbol_line_number(symbol),
-        ]
-        return "".join(line)
 
     def _program_line(self, assembled_line):
         line = [

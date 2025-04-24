@@ -1,4 +1,5 @@
-;   Memory Block to Paper Tape Raw
+        TITLE Memory Block to Paper Tape Raw
+        SUBTTLE Writes a block of memory to PTP
 
 ;   Punches the contents of memory to paper tape.
 ;

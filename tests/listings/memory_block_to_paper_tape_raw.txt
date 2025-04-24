@@ -1,15 +1,20 @@
-SYMBOLS:
-START:    000000 770200   DEFINED ON: 9         
-STARTADD: 000000 000000   DEFINED ON: 11        
-NBYTES:   000000 000001   DEFINED ON: 12        
-POINT:    000000 000002   DEFINED ON: 13        
-CURADD:   000000 000003   DEFINED ON: 14        
-BLEFT:    000000 000004   DEFINED ON: 15        
-OUT:      000000 000005   DEFINED ON: 16        
-WORDL:    000000 770204   DEFINED ON: 23        
-BYTEL:    000000 770205   DEFINED ON: 24        
-NEWW:     000000 770213   DEFINED ON: 30        
-FIN:      000000 770215   DEFINED ON: 32        
+Memory Block to Paper Tape Raw
+Writes a block of memory to PTP
+Assembled with pdp10asm 0.1.0
+
+SYMBOLS
+_______
+START:    000000 770200   DEFINED ON: 10        
+STARTADD: 000000 000000   DEFINED ON: 12        
+NBYTES:   000000 000001   DEFINED ON: 13        
+POINT:    000000 000002   DEFINED ON: 14        
+CURADD:   000000 000003   DEFINED ON: 15        
+BLEFT:    000000 000004   DEFINED ON: 16        
+OUT:      000000 000005   DEFINED ON: 17        
+WORDL:    000000 770204   DEFINED ON: 24        
+BYTEL:    000000 770205   DEFINED ON: 25        
+NEWW:     000000 770213   DEFINED ON: 31        
+FIN:      000000 770215   DEFINED ON: 33        
 
 LABELS        INSTRUCTION         ADDRESS   VALUE         
 __________________________________________________________

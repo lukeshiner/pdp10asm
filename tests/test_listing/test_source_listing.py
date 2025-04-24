@@ -30,9 +30,29 @@ def test_listing_radix_defaults_to_8(program):
 
 
 def test_listing_text(listing):
+    listing.heading_text = mock.Mock(return_value="heading")
     listing._header = mock.Mock(return_value="header")
+    listing.symbols_listing_text = mock.Mock(return_value="symbols")
     listing._source_lines = mock.Mock(return_value="source")
-    assert listing.listing_text() == "header\nsource"
+    assert listing.listing_text() == "heading\n\nsymbols\n\nheader\n\nsource"
+
+
+@mock.patch("pdp10asm.listing.base_listing.version")
+def test_heading_text(mock_version, listing):
+    listing.program.title = "Program Title"
+    listing.program.subtitle = "Program Subtitle"
+    mock_version.return_value = "0.0.0"
+    expected = "Program Title\nProgram Subtitle\nAssembled with pdp10asm 0.0.0"
+    assert listing.heading_text() == expected
+
+
+def test_symbols_listing_text(listing):
+    listing.program.symbols = [mock.Mock()] * 3
+    listing._symbol_line = mock.Mock(return_value="text")
+    assert listing.symbols_listing_text() == "SYMBOLS\n_______\ntext\ntext\ntext"
+    listing._symbol_line.assert_has_calls(
+        (mock.call(_) for _ in listing.program.symbols), any_order=False
+    )
 
 
 def test_header(listing):

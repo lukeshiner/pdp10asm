@@ -260,10 +260,10 @@ def assembly_test(test_symbol, test_assembled_value):
 @pytest.mark.integration_test
 def test_assembly_of_hello_world(assembly_test, hello_world_text):
     symbols = [
-        ("LOOP", 0o101, 8),
-        ("PLOOP", 0o104, 11),
-        ("FIN", 0o107, 14),
-        ("POINT", 0o200, 17),
+        ("LOOP", 0o101, 9),
+        ("PLOOP", 0o104, 12),
+        ("FIN", 0o107, 15),
+        ("POINT", 0o200, 18),
     ]
     program_values = {
         0o000100: 0o200040000200,
@@ -288,17 +288,17 @@ def test_assembly_of_memory_to_paper_tape_raw(
     assembly_test, memory_to_paper_tape_raw_text
 ):
     symbols = [
-        ("START", 0o770200, 9),
-        ("STARTADD", 0, 11),
-        ("NBYTES", 1, 12),
-        ("POINT", 2, 13),
-        ("CURADD", 3, 14),
-        ("BLEFT", 4, 15),
-        ("OUT", 5, 16),
-        ("WORDL", 0o770204, 23),
-        ("BYTEL", 0o770205, 24),
-        ("NEWW", 0o770213, 30),
-        ("FIN", 0o770215, 32),
+        ("START", 0o770200, 10),
+        ("STARTADD", 0, 12),
+        ("NBYTES", 1, 13),
+        ("POINT", 2, 14),
+        ("CURADD", 3, 15),
+        ("BLEFT", 4, 16),
+        ("OUT", 5, 17),
+        ("WORDL", 0o770204, 24),
+        ("BYTEL", 0o770205, 25),
+        ("NEWW", 0o770213, 31),
+        ("FIN", 0o770215, 33),
     ]
     program_values = {
         0o770200: 0o710200000050,
