@@ -23,6 +23,7 @@ class PDP10Assembler:
         self.source_line_number = 0
         self.first_pass = FirstPassAssembler(assembler=self)
         self.second_pass = SecondPassAssembler(assembler=self)
+        self.radix = 8
         self.current_pass = self.first_pass
 
     def parse_text(self, text):
@@ -42,6 +43,7 @@ class PDP10Assembler:
         self.run_first_pass_assembly()
         self.program.symbols = self.symbol_table.user_symbols()
         self.current_pass = self.second_pass
+        self.radix = 8
         self.run_second_pass_assembly()
         return self.program
 

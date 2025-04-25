@@ -28,6 +28,10 @@ def test_has_source_line_number(source_line):
     assert source_line.source_line_number == source_line.source_line_number
 
 
+def test_has_memory_location_count(source_line):
+    assert source_line.memory_location_count == 0
+
+
 @pytest.mark.parametrize(
     "string,return_value,comment",
     (
@@ -78,6 +82,7 @@ def test_read_assignment_with_assignment(source_line):
     assert source_line._read_assignment(text) == ""
     assert source_line.is_assignment is True
     assert source_line.is_assemblable is False
+    assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol == "A"
     assert source_line.assignment_value == "B"
 
@@ -87,6 +92,7 @@ def test_read_assignment_with_non_assignment(source_line):
     assert source_line._read_assignment(text) == text
     assert source_line.is_assignment is False
     assert source_line.is_assemblable is False
+    assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
 
@@ -95,6 +101,7 @@ def test_read_assignment_with_empty_string(source_line):
     assert source_line._read_assignment("") == ""
     assert source_line.is_assignment is False
     assert source_line.is_assemblable is False
+    assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
 
@@ -174,6 +181,7 @@ def test_parse_instruction_type_with_no_operator(source_line):
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
     assert source_line.is_assemblable is False
+    assert source_line.memory_location_count == 0
     assert source_line.is_value is False
 
 
@@ -190,6 +198,7 @@ def test_parse_instruction_type_with_pseudo_operator(
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
     assert source_line.is_assemblable is False
+    assert source_line.memory_location_count == 0
     assert source_line.is_value is False
 
 
@@ -204,6 +213,7 @@ def test_parse_instruction_type_with_primary_instruction(source_line):
     assert source_line.is_primary_instruction is True
     assert source_line.is_io_instruction is False
     assert source_line.is_assemblable is True
+    assert source_line.memory_location_count == 1
     assert source_line.is_value is False
 
 
@@ -221,6 +231,7 @@ def test_parse_instruction_type_with_io_instruction(source_line):
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is True
     assert source_line.is_assemblable is True
+    assert source_line.memory_location_count == 1
     assert source_line.is_value is False
 
 
@@ -238,6 +249,7 @@ def test_parse_instruction_type_with_value(source_line):
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
     assert source_line.is_assemblable is True
+    assert source_line.memory_location_count == 1
     assert source_line.is_value is True
 
 
@@ -438,6 +450,47 @@ def test_read_text_raises_for_invalid_operator(
     assert str(e.value) == "Unable to parse argument 'invalid text'."
 
 
+@mock.patch("pdp10asm.source_line.PseudoOperators")
+def test_read_text_handles_pseudo_operator_if_pseudo_operator(
+    mock_pseduo_operators,
+    mock_read_comment,
+    mock_read_labels,
+    mock_read_assignment,
+    mock_read_operator,
+    mock_parse_instruction_type,
+    mock_parse_arguments,
+    source_line,
+    text,
+):
+    source_line.is_assignment = False
+    source_line.is_pseudo_operator = True
+    source_line.operator = "text"
+    source_line.read_text()
+    mock_pseduo_operators.get_pseudo_op.assert_called_once_with(source_line.operator)
+    mock_pseduo_operators.get_pseudo_op.return_value.source_line_process.assert_called_once_with(
+        source_line
+    )
+
+
+@mock.patch("pdp10asm.source_line.PseudoOperators")
+def test_read_text_does_not_handle_pseudo_operator_if_not_pseudo_operator(
+    mock_pseduo_operators,
+    mock_read_comment,
+    mock_read_labels,
+    mock_read_assignment,
+    mock_read_operator,
+    mock_parse_instruction_type,
+    mock_parse_arguments,
+    source_line,
+    text,
+):
+    source_line.is_assignment = False
+    source_line.is_pseudo_operator = False
+    source_line.operator = "text"
+    source_line.read_text()
+    mock_pseduo_operators.get_pseudo_op.assert_not_called()
+
+
 @pytest.fixture
 def mock_parse_primary_operand(source_line):
     source_line._parse_primary_operand = mock.Mock()
@@ -560,9 +613,9 @@ def test_parse_value(source_line):
         ("AC,@(INDEX)", "AC", "INDEX", "0", True),
     ),
 )
-def test_parse_operand(string, ac, index, memory, indirect, source_line):
+def test_parse_address(string, ac, index, memory, indirect, source_line):
     accumulator, index_register, memory_address, is_indirect = (
-        source_line._parse_operand(string)
+        source_line.parse_address(string)
     )
     assert accumulator == ac
     assert index_register == index
@@ -591,16 +644,16 @@ def indirect():
 
 
 @pytest.fixture
-def mock_parse_operand(source_line, ac, index, memory, indirect):
-    source_line._parse_operand = mock.Mock(return_value=(ac, index, memory, indirect))
-    return source_line._parse_operand
+def mock_parse_address(source_line, ac, index, memory, indirect):
+    source_line.parse_address = mock.Mock(return_value=(ac, index, memory, indirect))
+    return source_line.parse_address
 
 
 def test_parse_primary_operand(
-    text, mock_parse_operand, ac, index, memory, indirect, source_line
+    text, mock_parse_address, ac, index, memory, indirect, source_line
 ):
     source_line._parse_primary_operand(text)
-    mock_parse_operand.assert_called_once_with(text)
+    mock_parse_address.assert_called_once_with(text)
     assert source_line.accumulator == ac
     assert source_line.index_register == index
     assert source_line.memory_address == memory
@@ -609,10 +662,10 @@ def test_parse_primary_operand(
 
 
 def test_parse_io_operand(
-    text, mock_parse_operand, ac, index, memory, indirect, source_line
+    text, mock_parse_address, ac, index, memory, indirect, source_line
 ):
     source_line._parse_io_operand(text)
-    mock_parse_operand.assert_called_once_with(text)
+    mock_parse_address.assert_called_once_with(text)
     assert source_line.device_id == ac
     assert source_line.index_register == index
     assert source_line.memory_address == memory
@@ -723,6 +776,7 @@ def test_source_line_with_empty_string(assembler):
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is False
     assert source_line.is_assemblable is False
+    assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
     assert source_line.operator is None
@@ -746,6 +800,7 @@ def test_source_line_with_only_comment(assembler):
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is False
     assert source_line.is_assemblable is False
+    assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
     assert source_line.operator is None
@@ -769,6 +824,7 @@ def test_source_line_with_halt(assembler):
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is False
     assert source_line.is_assemblable is True
+    assert source_line.memory_location_count == 1
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
     assert source_line.operator == "HALT"
@@ -793,6 +849,7 @@ def test_source_line_with_value(assembler):
     assert source_line.is_assignment is False
     assert source_line.is_value is True
     assert source_line.is_assemblable is True
+    assert source_line.memory_location_count == 1
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
     assert source_line.operator is None

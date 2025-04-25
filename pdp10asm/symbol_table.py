@@ -587,6 +587,15 @@ class ProgramControlInstructions(SymbolList):
     }
 
 
+class SpecialInstructions(SymbolList):
+    """Instructions Arithmetic and Logical Testing."""
+
+    symbol_class = InstructionSymbol
+    symbols = {
+        "Z": 0,  # Zero
+    }
+
+
 class JumpVariations(SymbolList):
     """Variations of the Jump instructions that us AC as flags."""
 

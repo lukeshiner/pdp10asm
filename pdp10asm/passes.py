@@ -36,8 +36,6 @@ class BaseAssemblerPass:
             if source_line.is_empty:
                 continue
             self.process_line(source_line)
-            if source_line.is_assemblable:
-                self.program_counter += 1
 
     def process_line(self, words):
         """Process a line of assembly."""
@@ -72,6 +70,7 @@ class FirstPassAssembler(BaseAssemblerPass):
             self.handle_assignments(source_line)
         else:
             self.handle_labels(source_line)
+        self.program_counter += source_line.memory_location_count
 
     def handle_pseudo_operator(self, source_line):
         """Execute an assembler instruction."""
@@ -116,11 +115,19 @@ class SecondPassAssembler(BaseAssemblerPass):
             return
         if source_line.is_assemblable is True:
             instruction_word = self.assemble_line(source_line)
+            self.add_instructions(
+                source_line=source_line, binary_values=[instruction_word]
+            )
+
+    def add_instructions(self, source_line, binary_values):
+        """Add lines to the program."""
+        for value in binary_values:
             self.assembler.program.add_line(
                 source_line=source_line,
                 memory_location=self.program_counter,
-                binary_value=instruction_word,
+                binary_value=value,
             )
+            self.program_counter += 1
 
     def assemble_line(self, source_line):
         """Return the binary word represented by line."""
@@ -128,9 +135,19 @@ class SecondPassAssembler(BaseAssemblerPass):
             return self.twos_complement_value(source_line.value)
         operator_binary = self.symbol_value(source_line.operator)
         if source_line.is_primary_instruction is True:
-            operand = self.primary_operand_value(source_line)
+            operand = self.primary_operand_value(
+                memory_address=source_line.memory_address,
+                accumulator=source_line.accumulator,
+                index_register=source_line.index_register,
+                is_indirect=source_line.is_indirect,
+            )
         elif source_line.is_io_instruction is True:
-            operand = self.io_operand_value(source_line)
+            operand = self.io_operand_value(
+                memory_address=source_line.memory_address,
+                device_id=source_line.device_id,
+                index_register=source_line.index_register,
+                is_indirect=source_line.is_indirect,
+            )
         else:
             raise AssemblyError(f"Unable to parse line {source_line.text!r}")
         return operator_binary | operand
@@ -141,23 +158,27 @@ class SecondPassAssembler(BaseAssemblerPass):
         if operator.second_pass is True:
             operator.process(assembler=self.assembler, source_line=source_line)
 
-    def primary_operand_value(self, source_line):
+    def primary_operand_value(
+        self, memory_address=0, accumulator=None, index_register=None, is_indirect=False
+    ):
         """Return the operand part of an instruction word."""
         operand = 0
-        operand |= self.accumulator_value(source_line.accumulator)
-        operand |= self.index_register_value(source_line.index_register)
-        operand |= self.address_value(source_line.memory_address)
-        if source_line.is_indirect is True:
+        operand |= self.accumulator_value(accumulator)
+        operand |= self.index_register_value(index_register)
+        operand |= self.address_value(memory_address)
+        if is_indirect is True:
             operand |= Constants.INDIRECT_BIT
         return operand
 
-    def io_operand_value(self, source_line):
+    def io_operand_value(
+        self, memory_address=0, device_id=None, index_register=None, is_indirect=False
+    ):
         """Return the operand part of an IO instruction word."""
         operand = 0
-        operand |= self.device_id_value(source_line.device_id)
-        operand |= self.index_register_value(source_line.index_register)
-        operand |= self.address_value(source_line.memory_address)
-        if source_line.is_indirect is True:
+        operand |= self.device_id_value(device_id)
+        operand |= self.index_register_value(index_register)
+        operand |= self.address_value(memory_address)
+        if is_indirect is True:
             operand |= Constants.INDIRECT_BIT
         return operand
 

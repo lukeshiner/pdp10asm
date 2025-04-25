@@ -106,36 +106,6 @@ def test_run_method_stops_when_done_is_true(base_pass):
     base_pass.process_line.assert_not_called()
 
 
-def test_run_method_does_not_increment_program_counter_when_source_line_is_not_assemblable(
-    base_pass,
-):
-    base_pass.program_counter = 5
-    base_pass.process_line = mock.Mock()
-    base_pass.assembler.program.source_lines = [
-        mock.Mock(is_empty=False, is_assemblable=False)
-    ]
-    base_pass.run()
-    base_pass.process_line.assert_called_once_with(
-        base_pass.assembler.program.source_lines[0]
-    )
-    assert base_pass.program_counter == 5
-
-
-def test_run_method_increments_program_counter_when_source_line_is_assemblable(
-    base_pass,
-):
-    base_pass.program_counter = 5
-    base_pass.process_line = mock.Mock()
-    base_pass.assembler.program.source_lines = [
-        mock.Mock(is_empty=False, is_assemblable=True)
-    ]
-    base_pass.run()
-    base_pass.process_line.assert_called_once_with(
-        base_pass.assembler.program.source_lines[0]
-    )
-    assert base_pass.program_counter == 6
-
-
 def test_symbol_value(base_pass, symbol):
     base_pass.symbol_table.add_user_symbol(symbol, 10, 10)
     assert base_pass.symbol_value(symbol) == 10

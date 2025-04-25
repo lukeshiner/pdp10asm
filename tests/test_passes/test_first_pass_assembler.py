@@ -26,7 +26,9 @@ def mock_parser():
 
 @pytest.fixture
 def source_line():
-    return mock.Mock(is_pseudo_operator=False, is_assignment=False)
+    return mock.Mock(
+        is_pseudo_operator=False, is_assignment=False, memory_location_count=0
+    )
 
 
 @pytest.fixture
@@ -59,18 +61,26 @@ def mock_twos_complement_value(first_pass_assembler):
     return first_pass_assembler.twos_complement_value
 
 
-def test_processs_line_handles_pseudo_operators(
+@pytest.fixture
+def mock_add_instructions(first_pass_assembler):
+    first_pass_assembler.add_instructions = mock.Mock()
+    return first_pass_assembler.add_instructions
+
+
+def test_process_line_handles_pseudo_operators(
     mock_handle_labels,
     mock_handle_assignments,
     mock_handle_pseudo_operator,
     first_pass_assembler,
     source_line,
+    mock_add_instructions,
 ):
     source_line.is_pseudo_operator = True
     first_pass_assembler.process_line(source_line)
     mock_handle_pseudo_operator.assert_called_once_with(source_line)
     mock_handle_labels.assert_not_called()
     mock_handle_assignments.assert_not_called()
+    mock_add_instructions.assert_not_called()
 
 
 def test_process_line_calls_handle_labels(
@@ -94,6 +104,19 @@ def test_process_line_calls_handle_assignments(
     source_line.is_assignment = True
     first_pass_assembler.process_line(source_line)
     mock_handle_assignments.assert_called_once_with(source_line)
+
+
+def test_process_line_updates_program_counter(
+    mock_handle_labels,
+    mock_handle_assignments,
+    mock_handle_pseudo_operator,
+    first_pass_assembler,
+    source_line,
+):
+    first_pass_assembler.program_counter = 10
+    source_line.memory_location_count = 5
+    first_pass_assembler.process_line(source_line)
+    assert first_pass_assembler.program_counter == 15
 
 
 @mock.patch("pdp10asm.passes.PseudoOperators")

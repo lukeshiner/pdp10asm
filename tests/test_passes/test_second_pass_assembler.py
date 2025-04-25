@@ -139,6 +139,27 @@ def test_process_line_does_not_call_assemble_line_when_pseudo_operator(
     mock_assemble_line.assert_not_called()
 
 
+def test_add_instructions_adds_instructions(mock_assembler, second_pass, source_line):
+    binary_values = [100, 200, 300]
+    second_pass.program_counter = 100
+    second_pass.add_instructions(source_line=source_line, binary_values=binary_values)
+    mock_assembler.program.add_line.assert_has_calls(
+        (
+            mock.call(source_line=source_line, memory_location=100, binary_value=100),
+            mock.call(source_line=source_line, memory_location=101, binary_value=200),
+            mock.call(source_line=source_line, memory_location=102, binary_value=300),
+        ),
+        any_order=False,
+    )
+
+
+def test_add_instructions_updates_program_counter(second_pass, source_line):
+    binary_values = [100, 200, 300]
+    second_pass.program_counter = 100
+    second_pass.add_instructions(source_line=source_line, binary_values=binary_values)
+    assert second_pass.program_counter == 103
+
+
 @pytest.fixture
 def mock_symbol_table(second_pass):
     second_pass.symbol_table = mock.Mock()
@@ -225,7 +246,12 @@ def test_assemble_line_with_primary_instruction(
 ):
     source_line.is_primary_instruction = True
     return_value = second_pass.assemble_line(source_line)
-    mock_primary_operand_value.assert_called_once_with(source_line)
+    mock_primary_operand_value.assert_called_once_with(
+        memory_address=source_line.memory_address,
+        accumulator=source_line.accumulator,
+        index_register=source_line.index_register,
+        is_indirect=source_line.is_indirect,
+    )
     assert (
         return_value
         == mock_symbol_value.return_value | mock_primary_operand_value.return_value
@@ -242,7 +268,12 @@ def test_assemble_line_with_io_instruction(
 ):
     source_line.is_io_instruction = True
     return_value = second_pass.assemble_line(source_line)
-    mock_io_operand_value.assert_called_once_with(source_line)
+    mock_io_operand_value.assert_called_once_with(
+        memory_address=source_line.memory_address,
+        device_id=source_line.device_id,
+        index_register=source_line.index_register,
+        is_indirect=source_line.is_indirect,
+    )
     assert (
         return_value
         == mock_symbol_value.return_value | mock_io_operand_value.return_value
@@ -361,13 +392,18 @@ def test_primary_operand_value(
     ac, index, indirect, mem, expected, second_pass, source_line
 ):
     second_pass.accumulator_value = mock.Mock(return_value=ac)
-    source_line.is_indirect = indirect
     second_pass.address_value = mock.Mock(return_value=mem)
     second_pass.index_register_value = mock.Mock(return_value=index)
-    assert second_pass.primary_operand_value(source_line) == expected
-    second_pass.accumulator_value.assert_called_once_with(source_line.accumulator)
-    second_pass.index_register_value.assert_called_once_with(source_line.index_register)
-    second_pass.address_value.assert_called_once_with(source_line.memory_address)
+    return_value = second_pass.primary_operand_value(
+        memory_address=mem,
+        accumulator=ac,
+        index_register=index,
+        is_indirect=indirect,
+    )
+    assert return_value == expected
+    second_pass.accumulator_value.assert_called_once_with(ac)
+    second_pass.index_register_value.assert_called_once_with(index)
+    second_pass.address_value.assert_called_once_with(mem)
 
 
 @pytest.mark.parametrize(
@@ -382,13 +418,19 @@ def test_io_operand_value(
     dev, index, indirect, mem, expected, second_pass, source_line
 ):
     second_pass.device_id_value = mock.Mock(return_value=dev)
-    source_line.is_indirect = indirect
     second_pass.address_value = mock.Mock(return_value=mem)
     second_pass.index_register_value = mock.Mock(return_value=index)
-    assert second_pass.io_operand_value(source_line) == expected
-    second_pass.device_id_value.assert_called_once_with(source_line.device_id)
-    second_pass.index_register_value.assert_called_once_with(source_line.index_register)
-    second_pass.address_value.assert_called_once_with(source_line.memory_address)
+    return_value = second_pass.io_operand_value(
+        memory_address=mem,
+        device_id=dev,
+        index_register=index,
+        is_indirect=indirect,
+    )
+
+    assert return_value == expected
+    second_pass.device_id_value.assert_called_once_with(dev)
+    second_pass.index_register_value.assert_called_once_with(index)
+    second_pass.address_value.assert_called_once_with(mem)
 
 
 @pytest.mark.parametrize(

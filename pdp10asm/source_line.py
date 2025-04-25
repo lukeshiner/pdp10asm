@@ -16,6 +16,7 @@ class SourceLine:
         self.text = text
         self.source_line_number = source_line_number
         self.source_text = None
+        self.memory_location_count = 0
         self.is_pseudo_operator = False
         self.is_assignment = False
         self.is_instruction = False
@@ -58,6 +59,43 @@ class SourceLine:
             raise AssemblyError(f"Unable to parse argument {text!r}.").with_traceback(
                 e.__traceback__
             ) from e
+        if self.is_pseudo_operator:
+            operator = PseudoOperators.get_pseudo_op(self.operator)
+            operator.source_line_process(self)
+
+    @staticmethod
+    def parse_address(text):
+        """
+        Return a parsed address operand.
+
+        Returns:
+            accumulator (str): The accumulator part of the address or None.
+            index_register (str): The Index Register part of the address or None.
+            memory_address (str): The address part of the address.
+            is_indirect (bool): True if the address is indirect, otherwise False.
+        """
+        accumulator = None
+        index_register = None
+        memory_address = "0"
+        is_indirect = False
+        if Constants.AC_SEPERATOR in text:
+            accumulator, text = text.split(Constants.AC_SEPERATOR)
+            accumulator = accumulator.strip()
+            if len(accumulator) == 0:
+                accumulator = None
+            if Constants.OPEN_INDEX_REGISTER in text:
+                text, index_register = text.split(Constants.OPEN_INDEX_REGISTER)
+                index_register = index_register.replace(
+                    Constants.CLOSE_INDEX_REGISTER, ""
+                ).strip()
+                index_register = index_register
+            text = text.strip()
+        if text and text[0] == Constants.INDIRECT:
+            is_indirect = True
+            text = text[1:]
+        if len(text) > 0:
+            memory_address = text
+        return accumulator, index_register, memory_address, is_indirect
 
     def _read_comment(self, text):
         if Constants.COMMENT in text:
@@ -119,13 +157,16 @@ class SourceLine:
             self.is_instruction = True
             self.is_primary_instruction = True
             self.is_assemblable = True
+            self.memory_location_count = 1
         elif symbol_table.is_io_instruction_symbol(self.operator) is True:
             self.is_instruction = True
             self.is_io_instruction = True
             self.is_assemblable = True
+            self.memory_location_count = 1
         elif len(text.strip()) == 0:
             self.is_value = True
             self.is_assemblable = True
+            self.memory_location_count = 1
             self.value = self.operator
             self.operator = None
         else:
@@ -146,37 +187,12 @@ class SourceLine:
     def _parse_value(self, text):
         return text
 
-    @staticmethod
-    def _parse_operand(text):
-        accumulator = None
-        index_register = None
-        memory_address = "0"
-        is_indirect = False
-        if Constants.AC_SEPERATOR in text:
-            accumulator, text = text.split(Constants.AC_SEPERATOR)
-            accumulator = accumulator.strip()
-            if len(accumulator) == 0:
-                accumulator = None
-            if Constants.OPEN_INDEX_REGISTER in text:
-                text, index_register = text.split(Constants.OPEN_INDEX_REGISTER)
-                index_register = index_register.replace(
-                    Constants.CLOSE_INDEX_REGISTER, ""
-                ).strip()
-                index_register = index_register
-            text = text.strip()
-        if text and text[0] == Constants.INDIRECT:
-            is_indirect = True
-            text = text[1:]
-        if len(text) > 0:
-            memory_address = text
-        return accumulator, index_register, memory_address, is_indirect
-
     def _parse_primary_operand(self, text):
         self.accumulator, self.index_register, self.memory_address, self.is_indirect = (
-            self._parse_operand(text)
+            self.parse_address(text)
         )
 
     def _parse_io_operand(self, text):
         self.device_id, self.index_register, self.memory_address, self.is_indirect = (
-            self._parse_operand(text)
+            self.parse_address(text)
         )

@@ -9,12 +9,28 @@ from pdp10asm.expressions import ExpressionParser, Operations
 
 @pytest.fixture
 def assembler():
-    return mock.Mock()
+    return mock.Mock(radix=8)
 
 
 @pytest.fixture
 def parser(assembler):
     return ExpressionParser("text", assembler)
+
+
+def test_expression_parser_has_text(parser):
+    assert parser.text == "text"
+
+
+def test_expression_parser_has_assembler(parser, assembler):
+    assert parser.assembler == assembler
+
+
+def test_expression_parser_has_radix(parser):
+    assert parser.radix is None
+
+
+def test_expression_parser_takes_radix(assembler):
+    assert ExpressionParser("text", assembler, radix=10).radix == 10
 
 
 @pytest.mark.parametrize(
@@ -39,16 +55,43 @@ def test_parse_number(text, expected, parser):
 
 
 @pytest.mark.parametrize(
-    "text,value,radix",
+    "text,parser_radix,assembler_radix,value,radix",
     (
-        ("10", "10", 8),
-        ("^O10", "10", 8),
-        ("^D10", "10", 10),
-        ("^D 10", "10", 10),
-        ("^B101", "101", 2),
+        ("10", None, 8, "10", 8),
+        ("^O10", None, 8, "10", 8),
+        ("^D10", None, 8, "10", 10),
+        ("^D 10", None, 8, "10", 10),
+        ("^B101", None, 8, "101", 2),
+        ("10", 8, 8, "10", 8),
+        ("^O10", 8, 8, "10", 8),
+        ("^D10", 8, 8, "10", 10),
+        ("^D 10", 8, 8, "10", 10),
+        ("^B101", 8, 8, "101", 2),
+        ("10", 10, 8, "10", 10),
+        ("^O10", 10, 8, "10", 8),
+        ("^D10", 10, 8, "10", 10),
+        ("^D 10", 10, 8, "10", 10),
+        ("^B101", 10, 8, "101", 2),
+        ("10", None, 5, "10", 5),
+        ("^O10", None, 5, "10", 8),
+        ("^D10", None, 5, "10", 10),
+        ("^D 10", None, 5, "10", 10),
+        ("^B101", None, 5, "101", 2),
+        ("10", 8, 5, "10", 8),
+        ("^O10", 8, 5, "10", 8),
+        ("^D10", 8, 5, "10", 10),
+        ("^D 10", 8, 5, "10", 10),
+        ("^B101", 8, 5, "101", 2),
+        ("10", 10, 5, "10", 10),
+        ("^O10", 10, 5, "10", 8),
+        ("^D10", 10, 5, "10", 10),
+        ("^D 10", 10, 5, "10", 10),
+        ("^B101", 10, 5, "101", 2),
     ),
 )
-def test_handle_radix(text, value, radix, parser):
+def test_handle_radix(text, parser_radix, assembler_radix, value, radix, parser):
+    parser.assembler.radix = assembler_radix
+    parser.radix = parser_radix
     assert parser.handle_radix(text) == (value, radix)
 
 
@@ -145,27 +188,47 @@ def test_expression_lexer(string, expected):
 @mock.patch("pdp10asm.expressions.ExpressionParser.parse")
 def test_as_literal(mock_parse):
     parser = ExpressionParser("", None)
-    parser.validate_value = mock.Mock()
+    parser.validate_word = mock.Mock()
     assert parser.as_literal() == mock_parse.return_value
-    parser.validate_value.assert_called_once_with(mock_parse.return_value)
+    parser.validate_word.assert_called_once_with(mock_parse.return_value)
 
 
 @mock.patch("pdp10asm.expressions.ExpressionParser.parse")
 def test_as_twos_complement(mock_parse):
     parser = ExpressionParser("", None)
-    parser.validate_value = mock.Mock()
+    parser.validate_word = mock.Mock()
     parser.to_twos_complement = mock.Mock()
     assert parser.as_twos_complement() == parser.to_twos_complement.return_value
     parser.to_twos_complement.assert_called_once_with(mock_parse.return_value)
-    parser.validate_value.assert_called_once_with(
-        parser.to_twos_complement.return_value
-    )
+    parser.validate_word.assert_called_once_with(parser.to_twos_complement.return_value)
+
+
+@pytest.mark.parametrize(
+    "value,negative,expected",
+    (
+        (1, False, 1),
+        (2, False, 2),
+        (-1, True, 1),
+        (-1, False, 262143),
+        (1, True, 262143),
+    ),
+)
+@mock.patch("pdp10asm.expressions.ExpressionParser.parse")
+def test_as_half_word(mock_parse, value, negative, expected):
+    parser = ExpressionParser("", None)
+    parser.value = value
+    parser.validate_half_word = mock.Mock()
+    assert parser.as_half_word(negative=negative) == expected
+    parser.validate_half_word.assert_called_once_with(expected)
 
 
 @pytest.mark.parametrize(
     "text,expected",
     (
         ("1", 1),
+        ("-1", -1),
+        ("-56", -0o56),
+        ("56", 0o56),
         ("1+1", 2),
         ("5-3", 2),
         (".-1", 4),
@@ -200,7 +263,7 @@ def test_parse(text, expected, assembler):
 def test_parse_with_no_operator():
     with pytest.raises(AssemblyError) as exc_info:
         ExpressionParser("text", mock.Mock())._parse_expression(["1", "2"])
-    assert str(exc_info.value) == "Value operator mismatch."
+    assert str(exc_info.value) == "Value operator mismatch ['1', '2']."
 
 
 @pytest.mark.parametrize(
@@ -219,52 +282,34 @@ def test_to_twos_complement(value, expected):
 
 
 @pytest.mark.parametrize("value", (0, 1, 0o777777777777))
-def test_validate_value_does_not_raise_for_valid_value(value):
-    ExpressionParser.validate_value(value)
+def test_validate_word_does_not_raise_for_valid_value(value):
+    ExpressionParser.validate_word(value)
 
 
-def test_validate_value_raises_if_value_negative():
+def test_validate_word_raises_if_value_negative():
     with pytest.raises(AssemblyError) as exc_info:
-        ExpressionParser.validate_value(-1)
+        ExpressionParser.validate_word(-1)
     assert str(exc_info.value) == "-1 is not a 36-bit number."
 
 
-def test_validate_value_raises_if_value_too_large():
+def test_validate_word_raises_if_value_too_large():
     with pytest.raises(AssemblyError) as exc_info:
-        ExpressionParser.validate_value(0o1000000000000)
+        ExpressionParser.validate_word(0o1000000000000)
     assert str(exc_info.value) == "68719476736 is not a 36-bit number."
 
 
-# @pytest.mark.parametrize(
-#     "text,level,expected",
-#     (
-#         ("some Text <<<X>><<<X>Y>Z>>", 5, []),
-#         ("some Text <<<X>><<<X>Y>Z>>", 4, ["X"]),
-#         ("some Text <<<X>><<<X>Y>Z>>", 3, ["X", "<X>Y"]),
-#         ("some Text <<<X>><<<X>Y>Z>>", 2, ["<X>", "<<X>Y>Z"]),
-#         ("some Text <<<X>><<<X>Y>Z>>", 1, ["<<X>><<<X>Y>Z>"]),
-#         ("some Text <<<X>><<<X>Y>Z>>", 0, ["some Text <<<X>><<<X>Y>Z>>"]),
-#         ("A", 0, ["A"]),
-#         ("<hello <world>>", 0, ["<hello <world>>"]),
-#         ("<hello <world>>", 1, ["world"]),
-#         ("<hello <world>>", 2, ["hello <world>"]),
-#         ("hello <world>", 1, ["world"]),
-#     ),
-# )
-# def test_get_nested_level(text, level, expected):
-#     value = ExpressionParser.get_nested_level(text, level)
-#     assert list(value) == expected
+@pytest.mark.parametrize("value", (0, 1, 0o777777))
+def test_validate_half_word_does_not_raise_for_valid_value(value):
+    ExpressionParser.validate_half_word(value)
 
 
-# @pytest.mark.parametrize(
-#     "text,expected",
-#     (
-#         ("A", 0),
-#         ("<A>", 1),
-#         ("<hello <world>>", 2),
-#         ("<hell<o<w>or>l>d>", 3),
-#         ("some Text <<<X>><<<X>Y>Z>>", 4),
-#     ),
-# )
-# def test_max_nested_level(text, expected):
-#     assert ExpressionParser.get_max_nexted_level(text) == expected
+def test_validate_half_word_raises_if_value_negative():
+    with pytest.raises(AssemblyError) as exc_info:
+        ExpressionParser.validate_half_word(-1)
+    assert str(exc_info.value) == "-1 is not an 18-bit number."
+
+
+def test_validate_half_word_raises_if_value_too_large():
+    with pytest.raises(AssemblyError) as exc_info:
+        ExpressionParser.validate_half_word(0o1000000)
+    assert str(exc_info.value) == "262144 is not an 18-bit number."

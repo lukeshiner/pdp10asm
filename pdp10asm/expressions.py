@@ -50,7 +50,7 @@ class ExpressionParser:
         Constants.SUBTRACTION_OPERATOR: Operations.subtraction_operation,
     }
 
-    def __init__(self, text, assembler):
+    def __init__(self, text, assembler, radix=None):
         """
         Evaluate expression text.
 
@@ -59,18 +59,29 @@ class ExpressionParser:
             assembler (PDP10Assembler): A reference to the assembler.
         """
         self.text = text
+        self.radix = radix
         self.assembler = assembler
         self.value = self.parse(self.text)
 
     def as_literal(self):
         """Return expression value as an integer."""
-        self.validate_value(self.value)
+        self.validate_word(self.value)
         return self.value
 
     def as_twos_complement(self):
         """Return expression value as an integer."""
         value = self.to_twos_complement(self.value)
-        self.validate_value(value)
+        self.validate_word(value)
+        return value
+
+    def as_half_word(self, negative=False):
+        """Return value as an 18-bit integer, if negative is True return two's complement."""
+        value = self.value
+        if negative is True:
+            value = value * -1
+        if value < 0:
+            value = 0o777777 & value
+        self.validate_half_word(value)
         return value
 
     def symbol_or_value(self, token):
@@ -94,7 +105,7 @@ class ExpressionParser:
         for indicator, radix in Constants.RADIX_QUALIFIERS.items():
             if indicator in value:
                 return value.replace(indicator, "").strip(), radix
-        return value, 8
+        return value, self.radix or self.assembler.radix
 
     def handle_magnitude(self, value):
         """Return value with magnitude removed and the magnitude value."""
@@ -111,10 +122,16 @@ class ExpressionParser:
         return 0o777777777777 & value
 
     @staticmethod
-    def validate_value(value):
+    def validate_word(value):
         """Raise AssemblyError if value is not a valid 36-bit integer."""
         if value < 0 or value > 0o777777777777:
             raise AssemblyError(f"{value} is not a 36-bit number.")
+
+    @staticmethod
+    def validate_half_word(value):
+        """Raise AssemblyError if value is not a valid 36-bit integer."""
+        if value < 0 or value > 0o777777:
+            raise AssemblyError(f"{value} is not an 18-bit number.")
 
     @staticmethod
     def expression_lexer(string):
@@ -166,7 +183,7 @@ class ExpressionParser:
                         or expression[operator_index - 1] in Constants.OPERATORS
                     ):
                         value = expression.pop(operator_index + 1)
-                        expression[operator_index] = 0 - self._parse_expression(value)
+                        expression[operator_index] = 0 - self._parse_expression([value])
                         return self._parse_expression(expression)
                 left = expression[:operator_index]
                 right = expression[operator_index + 1 :]
@@ -175,4 +192,4 @@ class ExpressionParser:
                     self._parse_expression(left),
                     self._parse_expression(right),
                 )
-        raise AssemblyError("Value operator mismatch.")
+        raise AssemblyError(f"Value operator mismatch {expression!r}.")

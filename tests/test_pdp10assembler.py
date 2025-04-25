@@ -75,6 +75,14 @@ def test_has_second_pass_assembler(pdp10assembler):
     assert isinstance(pdp10assembler.second_pass, SecondPassAssembler)
 
 
+def test_assembler_has_radix(pdp10assembler):
+    assert pdp10assembler.radix == 8
+
+
+def test_assembler_has_curent_pass(pdp10assembler):
+    assert pdp10assembler.current_pass == pdp10assembler.first_pass
+
+
 def test_assemble_method_calls_text_parse(
     mock_run_text_parse,
     mock_run_first_pass_assembly,
@@ -113,6 +121,17 @@ def test_assemble_method_updates_current_pass(
 ):
     pdp10assembler.assemble()
     assert pdp10assembler.current_pass == pdp10assembler.second_pass
+
+
+def test_assemble_method_resets_radix(
+    mock_run_text_parse,
+    mock_run_first_pass_assembly,
+    mock_run_second_pass_assembly,
+    pdp10assembler,
+):
+    pdp10assembler.radix = 10
+    pdp10assembler.assemble()
+    assert pdp10assembler.radix == 8
 
 
 def test_assemble_method_sets_program_symbols(
@@ -317,3 +336,103 @@ def test_assembly_of_memory_to_paper_tape_raw(
         0o770215: 0o254200770200,
     }
     assembly_test(memory_to_paper_tape_raw_text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_dec_psedudo_op(assembly_test):
+    text = "LOC 100\nDEC 10,20+5, 45,23534,-56\nLABEL:10\nEND"
+    symbols = [
+        ("LABEL", 0o105, 3),
+    ]
+    program_values = {
+        0o100: 10,
+        0o101: 25,
+        0o102: 45,
+        0o103: 23534,
+        0o104: 68719476680,
+        0o105: 0o10,
+    }
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_oct_psedudo_op(assembly_test):
+    text = """LOC 100
+            OCT 4+4,25, 45,23534,-56
+    LABEL:  10
+            END
+    """
+    symbols = [
+        ("LABEL", 0o105, 3),
+    ]
+    program_values = {
+        0o100: 0o10,
+        0o101: 0o25,
+        0o102: 0o45,
+        0o103: 0o23534,
+        0o104: 68719476690,
+        0o105: 0o10,
+    }
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_bare_value(assembly_test):
+    text = """LOC 100
+            A=2
+            B=5
+    REX:    A+B
+            END"""
+    symbols = [
+        ("A", 0o2, 2),
+        ("B", 0o5, 3),
+        ("REX", 0o100, 4),
+    ]
+    program_values = {
+        0o100: 0o7,
+    }
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_Z(assembly_test):
+    text = """LOC 100
+        Z
+        Z 3,
+        Z 3,2
+        Z 3,@2
+        Z 3,@2(1)
+        END
+    """
+    symbols = []
+    program_values = {
+        0o100: 0,
+        0o101: 0o000140000000,
+        0o102: 0o000140000002,
+        0o103: 0o000160000002,
+        0o104: 0o000161000002,
+    }
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_POINT(assembly_test):
+    text = """LOC 100
+        ADD=47777777
+        POINT 36,ADD,36
+        END
+    """
+    symbols = [("ADD", 0o47777777, 2)]
+    program_values = {0o100: 0o444447777777}
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_IOWD(assembly_test):
+    text = """LOC 100
+        IOWD 6,^D256
+        END
+    """
+    symbols = []
+    program_values = {0o100: 0o777772000377}
+    assembly_test(text, symbols, program_values)
