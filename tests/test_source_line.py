@@ -81,7 +81,7 @@ def test_read_assignment_with_assignment(source_line):
     text = "A= B"
     assert source_line._read_assignment(text) == ""
     assert source_line.is_assignment is True
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol == "A"
     assert source_line.assignment_value == "B"
@@ -91,7 +91,7 @@ def test_read_assignment_with_non_assignment(source_line):
     text = "A: B"
     assert source_line._read_assignment(text) == text
     assert source_line.is_assignment is False
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
@@ -100,7 +100,7 @@ def test_read_assignment_with_non_assignment(source_line):
 def test_read_assignment_with_empty_string(source_line):
     assert source_line._read_assignment("") == ""
     assert source_line.is_assignment is False
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
@@ -166,11 +166,25 @@ def test_read_labels_raises_for_invalid_label(string, error_text, source_line):
         ("MOVE AC0,@13", "MOVE", "AC0,@13"),
         ("BYTE 890 3993 288", "BYTE", "890 3993 288"),
         ("7000", "7000", ""),
+        ('"WOR D"', '"WOR D"', ""),
+        ("'WOR D'", "'WOR D'", ""),
     ),
 )
 def test_read_operator(string, operator, return_value, source_line):
     assert source_line._read_operator(string) == return_value
     assert source_line.operator == operator
+
+
+def test_read_operator_handles_seven_bit_text_word(source_line):
+    source_line._read_operator('"WOR D"')
+    assert source_line.is_text_word is True
+    assert source_line.is_value is True
+
+
+def test_read_operator_handles_six_bit_text_word(source_line):
+    source_line._read_operator("'WOR D'")
+    assert source_line.is_text_word is True
+    assert source_line.is_value is True
 
 
 def test_parse_instruction_type_with_no_operator(source_line):
@@ -180,7 +194,7 @@ def test_parse_instruction_type_with_no_operator(source_line):
     assert source_line.is_instruction is False
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 0
     assert source_line.is_value is False
 
@@ -197,7 +211,7 @@ def test_parse_instruction_type_with_pseudo_operator(
     assert source_line.is_instruction is False
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 0
     assert source_line.is_value is False
 
@@ -212,7 +226,7 @@ def test_parse_instruction_type_with_primary_instruction(source_line):
     assert source_line.is_instruction is True
     assert source_line.is_primary_instruction is True
     assert source_line.is_io_instruction is False
-    assert source_line.is_assemblable is True
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 1
     assert source_line.is_value is False
 
@@ -230,7 +244,7 @@ def test_parse_instruction_type_with_io_instruction(source_line):
     assert source_line.is_instruction is True
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is True
-    assert source_line.is_assemblable is True
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 1
     assert source_line.is_value is False
 
@@ -248,7 +262,7 @@ def test_parse_instruction_type_with_value(source_line):
     assert source_line.is_instruction is False
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
-    assert source_line.is_assemblable is True
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 1
     assert source_line.is_value is True
 
@@ -752,7 +766,7 @@ def test_source_line_with_assignment(assembler):
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is True
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.assignment_symbol == "A"
     assert source_line.assignment_value == "100"
     assert source_line.operator is None
@@ -775,7 +789,7 @@ def test_source_line_with_empty_string(assembler):
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is False
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
@@ -799,7 +813,7 @@ def test_source_line_with_only_comment(assembler):
     assert source_line.is_primary_instruction is False
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is False
-    assert source_line.is_assemblable is False
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 0
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
@@ -823,7 +837,7 @@ def test_source_line_with_halt(assembler):
     assert source_line.is_primary_instruction is True
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is False
-    assert source_line.is_assemblable is True
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 1
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
@@ -848,7 +862,7 @@ def test_source_line_with_value(assembler):
     assert source_line.is_io_instruction is False
     assert source_line.is_assignment is False
     assert source_line.is_value is True
-    assert source_line.is_assemblable is True
+    assert source_line.is_text_word is False
     assert source_line.memory_location_count == 1
     assert source_line.assignment_symbol is None
     assert source_line.assignment_value is None
@@ -858,6 +872,32 @@ def test_source_line_with_value(assembler):
     assert source_line.index_register is None
     assert source_line.memory_address is None
     assert source_line.value == "7000"
+    assert source_line.is_indirect is False
+    assert source_line.labels == []
+    assert source_line.comment is None
+
+
+@pytest.mark.integration_test
+def test_source_line_with_seven_bit_value(assembler):
+    text = '    "WORD"    '
+    source_line = SourceLine(assembler=assembler, source_line_number=1, text=text)
+    source_line.read_text()
+    assert source_line.is_empty is False
+    assert source_line.is_instruction is False
+    assert source_line.is_primary_instruction is False
+    assert source_line.is_io_instruction is False
+    assert source_line.is_assignment is False
+    assert source_line.is_value is True
+    assert source_line.is_text_word is True
+    assert source_line.memory_location_count == 1
+    assert source_line.assignment_symbol is None
+    assert source_line.assignment_value is None
+    assert source_line.operator is None
+    assert source_line.accumulator is None
+    assert source_line.device_id is None
+    assert source_line.index_register is None
+    assert source_line.memory_address is None
+    assert source_line.value == '"WORD"'
     assert source_line.is_indirect is False
     assert source_line.labels == []
     assert source_line.comment is None

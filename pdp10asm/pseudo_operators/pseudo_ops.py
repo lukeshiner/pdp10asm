@@ -1,5 +1,6 @@
 """Pseudo operators."""
 
+from pdp10asm.characters import Characters
 from pdp10asm.exceptions import AssemblyError
 from pdp10asm.expressions import ExpressionParser
 
@@ -394,3 +395,76 @@ class Xwd(PseudoOp):
     def source_line_process(cls, source_line):
         """Update source line properties."""
         source_line.memory_location_count = 1
+
+
+class BaseTextPseudoOp(PseudoOp):
+    """Base class for text pseudo ops."""
+
+    first_pass = False
+    second_pass = True
+
+    @classmethod
+    def source_line_process(cls, source_line):
+        """Update source line properties."""
+        words = cls.get_value(source_line.arguments)
+        source_line.memory_location_count = len(words)
+
+    @classmethod
+    def process(cls, assembler, source_line):
+        """Add the binary words represented by a string argument to the program."""
+        values = cls.get_value(source_line.arguments)
+        assembler.current_pass.add_instructions(
+            source_line=source_line, binary_values=values
+        )
+
+    @staticmethod
+    def parse_text_argument(text):
+        """Return the value of a text argument."""
+        delimiter = text[0]
+        stripped_text = text[1:]
+        if delimiter not in stripped_text:
+            raise AssemblyError(
+                f"The argument {text!r} does not contain an ending delimiter {delimiter!r}."
+            )
+        stripped_text = stripped_text[: stripped_text.index(delimiter)]
+        return stripped_text
+
+
+class Ascii(BaseTextPseudoOp):
+    """The ASCII pseudo op."""
+
+    name = "ASCII"
+
+    @classmethod
+    def get_value(cls, text):
+        """Return a list of words represented by the argument."""
+        text = cls.parse_text_argument(text)
+        return Characters.seven_bit_words(text)
+
+
+class Asciz(BaseTextPseudoOp):
+    """The ASCII pseudo op."""
+
+    name = "ASCIZ"
+
+    @classmethod
+    def get_value(cls, text):
+        """Return a list of words represented by the argument."""
+        text = cls.parse_text_argument(text)
+        values = Characters.seven_bit_words(text)
+        if values[-1] & 0b11111111 != 0:
+            values.append(0)
+        return values
+
+
+class Sixbit(BaseTextPseudoOp):
+    """The SIXBIT pseudo op."""
+
+    name = "SIXBIT"
+
+    @classmethod
+    def get_value(cls, text):
+        """Return a list of words represented by the argument."""
+        text = cls.parse_text_argument(text)
+        values = Characters.six_bit_words(text)
+        return values

@@ -26,6 +26,9 @@ def test_pseudo_operators_has_instructions():
         "POINT": po.Point,
         "IOWD": po.Iowd,
         "XWD": po.Xwd,
+        "ASCII": po.Ascii,
+        "ASCIZ": po.Asciz,
+        "SIXBIT": po.Sixbit,
     }
 
 
@@ -55,9 +58,15 @@ def test_get_pseudo_operator_method(word, expected):
     assert PseudoOperators.get_pseudo_op(word) is expected
 
 
-def test_base_pseudo_op_raises(mock_assembler):
+def test_base_pseudo_op_process_method_raises(mock_assembler):
     with pytest.raises(NotImplementedError):
         po.PseudoOp.process(mock_assembler, mock.Mock())
+
+
+def test_base_pseudo_op_source_line_process():
+    source_line = mock.Mock()
+    po.PseudoOp.source_line_process(source_line)
+    assert source_line.memory_location_count == 0
 
 
 def test_loc_instruction(mock_assembler):
@@ -382,4 +391,156 @@ def test_xwd_process(mock_assembler):
     po.Xwd.process(mock_assembler, source_line)
     mock_assembler.current_pass.add_instructions.assert_called_once_with(
         source_line=source_line, binary_values=[0o000006000400]
+    )
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    (
+        ('"Hello, World!"', "Hello, World!"),
+        ("/e'\"'/", "e'\"'"),
+    ),
+)
+def test_ascii_parse_text_argument(text, expected):
+    assert po.Ascii.parse_text_argument(text) == expected
+
+
+def test_ascii_parse_text_argument_with_invalid_value():
+    with pytest.raises(AssemblyError) as e:
+        po.Ascii.parse_text_argument("/Hello")
+    assert (
+        str(e.value)
+        == "The argument '/Hello' does not contain an ending delimiter '/'."
+    )
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Ascii.get_value")
+def test_ascii_source_line_process(mock_get_value):
+    source_line = mock.Mock()
+    mock_get_value.return_value = [mock.Mock()] * 5
+    po.Ascii.source_line_process(source_line)
+    assert source_line.memory_location_count == 5
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Characters.seven_bit_words")
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Ascii.parse_text_argument")
+def test_ascii_get_value(mock_parse_text_argument, mock_seven_bit_words):
+    return_value = po.Ascii.get_value("text")
+    mock_parse_text_argument.assert_called_once_with("text")
+    mock_seven_bit_words.assert_called_once_with(mock_parse_text_argument.return_value)
+    assert return_value == mock_seven_bit_words.return_value
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Ascii.get_value")
+def test_ascii_process(mock_get_value, mock_assembler):
+    source_line = mock.Mock(arguments="text")
+    po.Ascii.process(mock_assembler, source_line)
+    mock_get_value.assert_called_once_with("text")
+    mock_assembler.current_pass.add_instructions.assert_called_once_with(
+        source_line=source_line, binary_values=mock_get_value.return_value
+    )
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    (
+        ('"Hello, World!"', "Hello, World!"),
+        ("/e'\"'/", "e'\"'"),
+    ),
+)
+def test_asciz_parse_text_argument(text, expected):
+    assert po.Asciz.parse_text_argument(text) == expected
+
+
+def test_asciz_parse_text_argument_with_invalid_value():
+    with pytest.raises(AssemblyError) as e:
+        po.Asciz.parse_text_argument("/Hello")
+    assert (
+        str(e.value)
+        == "The argument '/Hello' does not contain an ending delimiter '/'."
+    )
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Asciz.get_value")
+def test_asciz_source_line_process(mock_get_value):
+    source_line = mock.Mock()
+    mock_get_value.return_value = [mock.Mock()] * 5
+    po.Asciz.source_line_process(source_line)
+    assert source_line.memory_location_count == 5
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Characters.seven_bit_words")
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Asciz.parse_text_argument")
+def test_asciz_get_value(mock_parse_text_argument, mock_seven_bit_words):
+    mock_seven_bit_words.return_value = [0b110000100000000000000000000100000000]
+    return_value = po.Asciz.get_value("text")
+    mock_parse_text_argument.assert_called_once_with("text")
+    mock_seven_bit_words.assert_called_once_with(mock_parse_text_argument.return_value)
+    assert return_value == [0b110000100000000000000000000100000000]
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Characters.seven_bit_words")
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Asciz.parse_text_argument")
+def test_asciz_get_value_adds_a_null(mock_parse_text_argument, mock_seven_bit_words):
+    mock_seven_bit_words.return_value = [0b110000100000000000000000000001000000]
+    return_value = po.Asciz.get_value("text")
+    mock_parse_text_argument.assert_called_once_with("text")
+    mock_seven_bit_words.assert_called_once_with(mock_parse_text_argument.return_value)
+    assert return_value == [0b110000100000000000000000000001000000, 0]
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Asciz.get_value")
+def test_asciz_process(mock_get_value, mock_assembler):
+    source_line = mock.Mock(arguments="text")
+    po.Asciz.process(mock_assembler, source_line)
+    mock_get_value.assert_called_once_with("text")
+    mock_assembler.current_pass.add_instructions.assert_called_once_with(
+        source_line=source_line, binary_values=mock_get_value.return_value
+    )
+
+
+@pytest.mark.parametrize(
+    "text,expected",
+    (
+        ('"Hello, World!"', "Hello, World!"),
+        ("/e'\"'/", "e'\"'"),
+    ),
+)
+def test_sixbit_parse_text_argument(text, expected):
+    assert po.Sixbit.parse_text_argument(text) == expected
+
+
+def test_sixbit_parse_text_argument_with_invalid_value():
+    with pytest.raises(AssemblyError) as e:
+        po.Sixbit.parse_text_argument("/Hello")
+    assert (
+        str(e.value)
+        == "The argument '/Hello' does not contain an ending delimiter '/'."
+    )
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Sixbit.get_value")
+def test_sixbit_source_line_process(mock_get_value):
+    source_line = mock.Mock()
+    mock_get_value.return_value = [mock.Mock()] * 5
+    po.Sixbit.source_line_process(source_line)
+    assert source_line.memory_location_count == 5
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Characters.six_bit_words")
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Sixbit.parse_text_argument")
+def test_sixbit_get_value(mock_parse_text_argument, mock_six_bit_words):
+    return_value = po.Sixbit.get_value("text")
+    mock_parse_text_argument.assert_called_once_with("text")
+    mock_six_bit_words.assert_called_once_with(mock_parse_text_argument.return_value)
+    assert return_value == mock_six_bit_words.return_value
+
+
+@mock.patch("pdp10asm.pseudo_operators.pseudo_ops.Sixbit.get_value")
+def test_sixbit_process(mock_get_value, mock_assembler):
+    source_line = mock.Mock(arguments="text")
+    po.Sixbit.process(mock_assembler, source_line)
+    mock_get_value.assert_called_once_with("text")
+    mock_assembler.current_pass.add_instructions.assert_called_once_with(
+        source_line=source_line, binary_values=mock_get_value.return_value
     )

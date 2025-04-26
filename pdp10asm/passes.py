@@ -1,5 +1,6 @@
 """Classes for first and second pass assembly."""
 
+from pdp10asm.characters import Characters
 from pdp10asm.pseudo_operators import PseudoOperators
 
 from .constants import Constants
@@ -113,7 +114,7 @@ class SecondPassAssembler(BaseAssemblerPass):
         elif source_line.is_pseudo_operator is True:
             self.handle_pseudo_operator(source_line)
             return
-        if source_line.is_assemblable is True:
+        if source_line.is_instruction is True or source_line.is_value is True:
             instruction_word = self.assemble_line(source_line)
             self.add_instructions(
                 source_line=source_line, binary_values=[instruction_word]
@@ -132,6 +133,8 @@ class SecondPassAssembler(BaseAssemblerPass):
     def assemble_line(self, source_line):
         """Return the binary word represented by line."""
         if source_line.is_value is True:
+            if source_line.is_text_word is True:
+                return Characters.text_word_value(source_line.value)
             return self.twos_complement_value(source_line.value)
         operator_binary = self.symbol_value(source_line.operator)
         if source_line.is_primary_instruction is True:

@@ -1,13 +1,27 @@
 """The PseudoOperators class."""
 
-from .pseudo_ops import PseudoOp
+from . import pseudo_ops as po
 
 
 class PseudoOperators:
     """Class for handling assembler instructions."""
 
     instructions = {
-        pseudo_op.name: pseudo_op for pseudo_op in PseudoOp.__subclasses__()
+        "LOC": po.Loc,
+        "END": po.End,
+        "TITLE": po.Title,
+        "SUBTTLE": po.Subtitle,
+        "RADIX": po.Radix,
+        "EXP": po.Exp,
+        "DEC": po.Dec,
+        "OCT": po.Oct,
+        "BYTE": po.Byte,
+        "POINT": po.Point,
+        "IOWD": po.Iowd,
+        "XWD": po.Xwd,
+        "ASCII": po.Ascii,
+        "ASCIZ": po.Asciz,
+        "SIXBIT": po.Sixbit,
     }
 
     @classmethod

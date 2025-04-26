@@ -43,6 +43,9 @@ class Constants:
         SUBTRACTION_OPERATOR,
     ]
     PROGRAM_COUNTER_OPERAND = "."
+    SEVEN_BIT_DELIMIETER = '"'
+    SIX_BIT_DELIMITER = "'"
+    TEXT_WORD_DELIMITERS = [SEVEN_BIT_DELIMIETER, SIX_BIT_DELIMITER]
 
     @staticmethod
     def is_symbol(word):

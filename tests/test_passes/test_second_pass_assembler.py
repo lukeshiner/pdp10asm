@@ -79,19 +79,33 @@ def test_process_line_ignores_assignments(
     assert second_pass.program_counter == 0
 
 
-def test_process_line_passes_input_to_assemble_line_when_not_pseudo_operator_or_assignment_and_is_assemblable(
+def test_process_line_passes_input_to_assemble_line_when_source_line_is_instruction(
     source_line, mock_handle_pseudo_operator, mock_assemble_line, second_pass
 ):
-    source_line.is_assemblable = True
+    source_line.is_assignment = False
+    source_line.is_pseudo_operator = False
+    source_line.is_instruction = True
+    source_line.is_value = False
     second_pass.process_line(source_line)
     mock_assemble_line.assert_called_once_with(source_line)
     mock_handle_pseudo_operator.assert_not_called()
 
 
-def test_process_line_updates_program_when_not_pseudo_operator_or_assignment_and_assemblable(
+def test_process_line_passes_input_to_assemble_line_when_source_line_is_value(
+    source_line, mock_handle_pseudo_operator, mock_assemble_line, second_pass
+):
+    source_line.is_instruction = False
+    source_line.is_value = True
+    second_pass.process_line(source_line)
+    mock_assemble_line.assert_called_once_with(source_line)
+    mock_handle_pseudo_operator.assert_not_called()
+
+
+def test_process_line_updates_program_when_instruction(
     source_line, mock_assemble_line, mock_program, second_pass
 ):
-    source_line.is_assemblable = True
+    source_line.is_instruction = True
+    source_line.is_value = False
     second_pass.program_counter = 4
     second_pass.process_line(source_line)
     mock_program.add_line.assert_called_once_with(
@@ -101,23 +115,38 @@ def test_process_line_updates_program_when_not_pseudo_operator_or_assignment_and
     )
 
 
-def test_process_line_does_not_update_program_when_not_assemblable(
+def test_process_line_updates_program_when_value(
     source_line, mock_assemble_line, mock_program, second_pass
 ):
-    source_line.is_assemblable = False
+    source_line.is_instruction = False
+    source_line.is_value = True
+    second_pass.program_counter = 4
+    second_pass.process_line(source_line)
+    mock_program.add_line.assert_called_once_with(
+        source_line=source_line,
+        memory_location=4,
+        binary_value=mock_assemble_line.return_value,
+    )
+
+
+def test_process_line_does_not_update_program_when_not_instruction_or_value(
+    source_line, mock_assemble_line, mock_program, second_pass
+):
+    source_line.is_instruction = False
+    source_line.is_value = False
     second_pass.process_line(source_line)
     mock_assemble_line.assert_not_called()
     mock_program.add_line.assert_not_called()
 
 
-def test_process_line_does_not_handle_assmbler_instruction_when_not_pseudo_operator(
+def test_process_line_does_not_handle_pseudo_operator_when_not_pseudo_operator(
     source_line, mock_handle_pseudo_operator, mock_assemble_line, second_pass
 ):
     second_pass.process_line(source_line)
     mock_handle_pseudo_operator.assert_not_called()
 
 
-def test_process_line_calls_handle_assmbler_instruction_when_pseudo_operator(
+def test_process_line_calls_handle_pseudo_operator_when_pseudo_operator(
     source_line,
     mock_handle_pseudo_operator,
     mock_assemble_line,
@@ -278,6 +307,23 @@ def test_assemble_line_with_io_instruction(
         return_value
         == mock_symbol_value.return_value | mock_io_operand_value.return_value
     )
+
+
+@mock.patch("pdp10asm.passes.Characters")
+def test_assemble_line_with_text_word(
+    mock_characters,
+    mock_symbol_table,
+    mock_symbol_value,
+    mock_primary_operand_value,
+    mock_io_operand_value,
+    second_pass,
+    source_line,
+):
+    source_line.is_value = True
+    source_line.is_text_word = True
+    return_value = second_pass.assemble_line(source_line)
+    mock_characters.text_word_value.assert_called_once_with(source_line.value)
+    assert return_value == mock_characters.text_word_value.return_value
 
 
 def test_assemble_line_with_invalid_instruction(

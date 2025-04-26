@@ -250,11 +250,17 @@ def test_symbol():
 @pytest.fixture
 def test_assembled_value():
     def _test_assembled_value(program, memory_location, binary_value):
-        assert memory_location in program.by_memory_location
+        assert (
+            memory_location in program.by_memory_location
+        ), f"Memory Location {memory_location:06o} was not set."
         assert isinstance(program.by_memory_location[memory_location], AssembledLine)
         assembled_line = program.by_memory_location[memory_location]
-        assert assembled_line.memory_location == memory_location
-        assert assembled_line.binary_value == binary_value
+        assert (
+            assembled_line.memory_location == memory_location
+        ), f"Assembled memory location {assembled_line.memory_location:012b} does not match acutal location {memory_location:06o}"
+        assert (
+            assembled_line.binary_value == binary_value
+        ), f"Memory location {memory_location:06o}: {assembled_line.binary_value:012o} does not match {binary_value:012o}"
 
     return _test_assembled_value
 
@@ -435,4 +441,83 @@ def test_assembly_with_IOWD(assembly_test):
     """
     symbols = []
     program_values = {0o100: 0o777772000377}
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_7_bit_word(assembly_test):
+    text = """LOC 100
+        "AXE"
+        END
+    """
+    symbols = []
+    program_values = {0o100: 0b00000000000000100000110110001000101}
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_6_bit_word(assembly_test):
+    text = """LOC 100
+        'TABLES'
+        END
+    """
+    symbols = []
+    program_values = {0o100: 0b110100100001100010101100100101110011}
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_6_bit_word_with_space(assembly_test):
+    text = """LOC 100
+        'TAB ES'
+        END
+    """
+    symbols = []
+    program_values = {0o100: 0b110100100001100010000000100101110011}
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_ascii_pseudo_op(assembly_test):
+    text = """LOC 100
+        ASCII "Hello, World!"
+        END
+    """
+    symbols = []
+    program_values = {
+        0o100: 0b100100011001011101100110110011011110,
+        0o101: 0b010110001000001010111110111111100100,
+        0o102: 0b110110011001000100001000000000000000,
+    }
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_asciz_pseudo_op(assembly_test):
+    text = """LOC 100
+        ASCIZ "Hello, World!12"
+        END
+    """
+    symbols = []
+    program_values = {
+        0o100: 0b100100011001011101100110110011011110,
+        0o101: 0b010110001000001010111110111111100100,
+        0o102: 0b110110011001000100001011000101100100,
+        0o103: 0,
+    }
+    assembly_test(text, symbols, program_values)
+
+
+@pytest.mark.integration_test
+def test_assembly_with_sixbit_pseudo_op(assembly_test):
+    text = """LOC 100
+        SIXBIT "HELLO, WORLD!"
+        END
+    """
+    symbols = []
+    program_values = {
+        0o100: 0b101000100101101100101100101111001100,
+        0o101: 0b000000110111101111110010101100100100,
+        0o102: 0b000001000000000000000000000000000000,
+    }
     assembly_test(text, symbols, program_values)

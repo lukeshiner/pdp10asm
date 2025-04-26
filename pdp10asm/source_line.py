@@ -23,7 +23,7 @@ class SourceLine:
         self.is_primary_instruction = False
         self.is_io_instruction = False
         self.is_value = False
-        self.is_assemblable = False
+        self.is_text_word = False
         self.is_empty = True
         self.comment = None
         self.instruction_text = None
@@ -129,7 +129,6 @@ class SourceLine:
                 raise AssemblyError(f"Invalid assignment {text!r}.") from e
             else:
                 self.is_assignment = True
-                self.is_assemblable = False
                 return ""
         return text
 
@@ -137,6 +136,11 @@ class SourceLine:
         text = text.strip()
         if len(text) == 0:
             self.operator = None
+            return ""
+        if text[0] in Constants.TEXT_WORD_DELIMITERS:
+            self.is_text_word = True
+            self.is_value = True
+            self.operator = text
             return ""
         try:
             operator, remainder = text.split(maxsplit=1)
@@ -156,16 +160,13 @@ class SourceLine:
         elif symbol_table.is_primary_instruction_symbol(self.operator) is True:
             self.is_instruction = True
             self.is_primary_instruction = True
-            self.is_assemblable = True
             self.memory_location_count = 1
         elif symbol_table.is_io_instruction_symbol(self.operator) is True:
             self.is_instruction = True
             self.is_io_instruction = True
-            self.is_assemblable = True
             self.memory_location_count = 1
         elif len(text.strip()) == 0:
             self.is_value = True
-            self.is_assemblable = True
             self.memory_location_count = 1
             self.value = self.operator
             self.operator = None
