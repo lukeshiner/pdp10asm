@@ -21,7 +21,7 @@ isort = "^6.0.1"
 flake8-bugbear = "^24.12.12"
 flake8-docstrings = "^1.7.0"
 pytest = "^8.4.0"
-pytest-cov = "^6.1.1"
+pytest-cov = "^6.2.1"
 pytest-integration = "^0.2.3"
 
 [project.scripts]
